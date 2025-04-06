@@ -1,7 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from models import LoginRequestModel, LoginResponseModel, BaseResponseModel, CreateAccountRequest
-from database import db, graph_client
-from query import create_user_query
+from database import Neo4jDB
+from query import CREATE_USER_QUERY, LOGIN_USER_QUERY
 
 user_route = APIRouter(
     tags=["User"],
@@ -15,8 +15,6 @@ user_route = APIRouter(
 async def create_user(
         payload:CreateAccountRequest
 ):
-    session = graph_client.session()
-
     user_details={
         "name":payload.name,
         "username":payload.username,
@@ -26,10 +24,37 @@ async def create_user(
         "gender":payload.gender,
         "account_privacy":payload.account_privacy
     }
+    result = await Neo4jDB(
+        user_details=user_details,
+        query=CREATE_USER_QUERY
+    ).db_action()
 
-    await session.run(
-        query=create_user_query,
-        parameters=user_details
-    )
+    if not result:
+        raise HTTPException(status_code=401, detail="User creation error!")
+    else:
+        return {"message":"User created successfully!"}
 
-    return {"message":"User created successfully!"}
+
+@user_route.post(
+    path="/login",
+    response_model=LoginResponseModel,
+)
+async def user_login(
+        payload:LoginRequestModel
+):
+    user_details={
+        "username":payload.username,
+        "password":payload.password
+    }
+    result = await Neo4jDB(
+        user_details=user_details,
+        query=LOGIN_USER_QUERY
+    ).db_action()
+
+    if not result:
+        raise HTTPException(status_code=401, detail="Invalid credentials!")
+    else:
+        return {
+            "username":result["username"],
+            "password":result["password"]
+        }
