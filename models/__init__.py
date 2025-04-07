@@ -5,5 +5,5 @@ __all__ = [
     "BaseResponseModel",
     "LoginRequestModel",
     "CreateAccountRequest",
-    "LoginResponseModel"
+    "LoginResponseModel",
 ]

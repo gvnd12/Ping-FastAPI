@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from models import LoginRequestModel, LoginResponseModel, BaseResponseModel, CreateAccountRequest
 from database import Neo4jDB
 from query import CREATE_USER_QUERY, LOGIN_USER_QUERY
+from query.graph_query import search_query
 
 user_route = APIRouter(
     tags=["User"],
@@ -58,3 +59,20 @@ async def user_login(
             "username":result["username"],
             "password":result["password"]
         }
+
+@user_route.post("/search")
+async def user_search(
+        filter_param:dict
+):
+    key = filter_param["key"]
+    value = filter_param["value"]
+
+    result = await Neo4jDB(
+        query=search_query(key, value),
+        user_details=filter_param
+    ).db_action()
+
+    if not result:
+        raise HTTPException(status_code=401, detail="User not found!")
+    else:
+        return result

@@ -1,9 +1,9 @@
 from typing import LiteralString
 from neo4j import AsyncGraphDatabase
-from settings.config import NEO4J_USER, NEO4J_PASSWORD
+from settings.config import NEO4J_USER, NEO4J_PASSWORD, NEO4J_URI
 
 graph_client = AsyncGraphDatabase().driver(
-    uri="bolt://localhost:7687",
+    uri= NEO4J_URI,
     auth=(NEO4J_USER,NEO4J_PASSWORD)
 )
 

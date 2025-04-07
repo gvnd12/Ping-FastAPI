@@ -1,7 +1,8 @@
 from pymongo import AsyncMongoClient
+from settings.config import MONGO_URL
 
 mongo_client = AsyncMongoClient(
-    host="localhost:27017",
+    host= MONGO_URL,
 )
 
 db = mongo_client["User"]["user_db"]
