@@ -1,3 +1,6 @@
+#Super Admin
+SUPER_ADMIN_USERNAME="superadmin"
+SUPER_ADMIN_PASSWORD="Super@123"
 
 #Neo4j
 NEO4J_URI="bolt://localhost:7687"

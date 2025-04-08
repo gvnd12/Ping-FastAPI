@@ -13,3 +13,4 @@ class CreateAccountRequest(BaseModel):
     date_of_birth:int
     gender:Literal["Male", "Female"]
     account_privacy:Literal["Public", "Private"]
+    active:bool | None = True

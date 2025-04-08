@@ -1,13 +1,15 @@
 from fastapi import APIRouter, HTTPException
-from models import LoginRequestModel, LoginResponseModel, BaseResponseModel, CreateAccountRequest
-from database import Neo4jDB
-from query import CREATE_USER_QUERY, LOGIN_USER_QUERY
-from query.graph_query import search_query
+from app.models import LoginRequestModel, LoginResponseModel, BaseResponseModel, CreateAccountRequest
+from app.database import Neo4jDB
+from app.query import CREATE_USER_QUERY, LOGIN_USER_QUERY
+from app.query.graph_query import search_query
+from app.settings.config import SUPER_ADMIN_USERNAME, SUPER_ADMIN_PASSWORD
 
 user_route = APIRouter(
     tags=["User"],
     prefix="/user"
 )
+
 
 @user_route.post(
     path="/user_signup",
@@ -43,32 +45,38 @@ async def create_user(
 async def user_login(
         payload:LoginRequestModel
 ):
+    username=payload.username
+    password=payload.password
+
     user_details={
-        "username":payload.username,
-        "password":payload.password
+        "username":username,
+        "password":password
     }
-    result = await Neo4jDB(
+    user = await Neo4jDB(
         user_details=user_details,
-        query=LOGIN_USER_QUERY
+        query=LOGIN_USER_QUERY,
     ).db_action()
 
-    if not result:
-        raise HTTPException(status_code=401, detail="Invalid credentials!")
+    if not user:
+        if username==SUPER_ADMIN_USERNAME and password==SUPER_ADMIN_PASSWORD:
+            print("Super admin login successful!")
+        else:
+            raise HTTPException(status_code=401, detail="Invalid credentials!")
     else:
         return {
-            "username":result["username"],
-            "password":result["password"]
+            "username":user["username"],
+            "password":user["password"]
         }
+
 
 @user_route.post("/search")
 async def user_search(
         filter_param:dict
 ):
     key = filter_param["key"]
-    value = filter_param["value"]
 
     result = await Neo4jDB(
-        query=search_query(key, value),
+        query=search_query(key),
         user_details=filter_param
     ).db_action()
 

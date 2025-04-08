@@ -1,6 +1,6 @@
 from typing import LiteralString
 from neo4j import AsyncGraphDatabase
-from settings.config import NEO4J_USER, NEO4J_PASSWORD, NEO4J_URI
+from app.settings.config import NEO4J_USER, NEO4J_PASSWORD, NEO4J_URI
 
 graph_client = AsyncGraphDatabase().driver(
     uri= NEO4J_URI,
@@ -11,7 +11,7 @@ class Neo4jDB:
     def __init__(
             self,
             user_details:dict,
-            query:LiteralString
+            query:LiteralString,
     ):
         self.user_details = user_details
         self.query = query

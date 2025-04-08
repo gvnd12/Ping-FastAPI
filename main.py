@@ -1,6 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
-from user import user_route
+from app.user import user_route
 
 app = FastAPI(
     title="Ping",

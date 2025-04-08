@@ -1,5 +1,5 @@
 from pymongo import AsyncMongoClient
-from settings.config import MONGO_URL
+from app.settings.config import MONGO_URL
 
 mongo_client = AsyncMongoClient(
     host= MONGO_URL,

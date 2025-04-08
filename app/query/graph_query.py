@@ -15,6 +15,6 @@ MATCH (n:user{username:$username,password:$password})
 RETURN n.username AS username,n.password AS password
 """
 
-def search_query(key,value):
+def search_query(key):
     SEARCH_QUERY = f"""MATCH (n:user) WHERE n.{key} = $value RETURN n"""
     return SEARCH_QUERY
