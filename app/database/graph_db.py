@@ -1,10 +1,10 @@
 from typing import LiteralString
 from neo4j import AsyncGraphDatabase
-from app.settings.config import NEO4J_USER, NEO4J_PASSWORD, NEO4J_URI
+from app.settings.config import NEO4J_USERNAME, NEO4J_PASSWORD, NEO4J_URI
 
-graph_client = AsyncGraphDatabase().driver(
+graph_client = AsyncGraphDatabase.driver(
     uri= NEO4J_URI,
-    auth=(NEO4J_USER,NEO4J_PASSWORD)
+    auth=(NEO4J_USERNAME,NEO4J_PASSWORD)
 )
 
 class Neo4jDB:

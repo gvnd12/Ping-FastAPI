@@ -14,3 +14,7 @@ class CreateAccountRequest(BaseModel):
     gender:Literal["Male", "Female"]
     account_privacy:Literal["Public", "Private"]
     active:bool | None = True
+
+class ChatModel(BaseModel):
+    to_id:str
+    chat:str
