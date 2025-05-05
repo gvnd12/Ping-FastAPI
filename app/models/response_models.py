@@ -4,5 +4,7 @@ class BaseResponseModel(BaseModel):
     message:str
 
 class LoginResponseModel(BaseModel):
-    username:str
-    password:str
+    access_token:str
+
+class CreateUserResponseModel(BaseModel):
+    result:dict

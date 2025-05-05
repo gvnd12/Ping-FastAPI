@@ -1,6 +1,7 @@
-from .request_models import LoginRequestModel, CreateAccountRequest, ChatModel
-from .response_models import LoginResponseModel, BaseResponseModel
+from .request_models import LoginRequestModel, CreateAccountRequest, ChatModel, UploadPostModel
+from .response_models import LoginResponseModel, BaseResponseModel, CreateUserResponseModel
 from .common_models import User
+from .identity_model import UserIdentity
 
 __all__ = [
     "User",
@@ -8,5 +9,8 @@ __all__ = [
     "LoginRequestModel",
     "CreateAccountRequest",
     "LoginResponseModel",
-    "ChatModel"
+    "ChatModel",
+    "UploadPostModel",
+    "UserIdentity",
+    "CreateUserResponseModel"
 ]

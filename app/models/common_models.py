@@ -9,3 +9,4 @@ class User(BaseUser, BaseModel):
     username:str
     email:str
     account_privacy:Literal["Public","Private"]
+    created_at: str

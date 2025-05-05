@@ -1,6 +1,7 @@
-from .graph_query import CREATE_USER_QUERY, LOGIN_USER_QUERY
+from .graph_query import CREATE_USER_QUERY, LOGIN_USER_QUERY, CHECK_DUPLICATE
 
 __all__ = [
     "CREATE_USER_QUERY",
-    "LOGIN_USER_QUERY"
+    "LOGIN_USER_QUERY",
+    "CHECK_DUPLICATE"
 ]
