@@ -8,3 +8,8 @@ class LoginResponseModel(BaseModel):
 
 class CreateUserResponseModel(BaseModel):
     result:dict
+
+class SearchResponseModel(BaseModel):
+    username:str
+    name:str
+    account_privacy:str

@@ -1,5 +1,6 @@
 CREATE_USER_QUERY = """
 CREATE(user:User{
+_id:$_id,
 user_code:$user_code,
 name:$name,
 username:$username,
@@ -23,11 +24,19 @@ MATCH (user:User {username: $username})
 DETACH DELETE user
 """
 
-EDIT_QUERY = """
-MATCH (user:User {username: $username})
-SET user.username = $newUsername
-"""
+def edit_query(update_dict:dict):
+    for key, value in update_dict.items():
+        EDIT_QUERY = f"""
+        MATCH (user:User)
+        WHERE user.user_id = $_id
+        SET user.{key} = ${value}
+        """
+    return EDIT_QUERY
 
-def search_query(key):
-    SEARCH_QUERY = f"""MATCH (n:user) WHERE n.{key} = $value RETURN n"""
+def search_query(key:str):
+    SEARCH_QUERY = f"""
+    MATCH (user:User)
+    WHERE user.{key} = $param
+    RETURN user
+    """
     return SEARCH_QUERY

@@ -30,11 +30,15 @@ class MongoDB:
 
     async def read_entry(
             self,
-            filter_param:dict
     ) -> dict:
-        result = await self.database[self.collection_name].find_one(filter=filter_param)
+        result = await self.database[self.collection_name].find_one(filter=self.filter_param)
         return result
 
     async def write_entry(self):
         result = await self.database[self.collection_name].insert_one(document=self.document)
+        return "result"
+
+    async def edit_entry(self):
+        result = await (self.database[self.collection_name]
+                        .find_one_and_update(filter=self.filter_param, update={"$set":{**self.document}}))
         return result

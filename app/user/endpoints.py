@@ -1,12 +1,12 @@
-from fastapi import APIRouter, HTTPException, UploadFile
-from app.models import LoginRequestModel, LoginResponseModel, UserIdentity
-from app.models import BaseResponseModel, CreateAccountRequest, UploadPostModel, CreateUserResponseModel
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from app.models import LoginRequestModel, LoginResponseModel, UserIdentity, SearchResponseModel
+from app.models import BaseResponseModel, CreateAccountRequest, UploadPostModel, UserSearch
 from app.database import Neo4jDB, MongoDB
 from app.query import CREATE_USER_QUERY, LOGIN_USER_QUERY, CHECK_DUPLICATE
 from app.query.graph_query import search_query
 from app.core.config import settings
 from app.core.jwt_manager import _jwt_encode, _jwt_decode
-from ..tools.utils import generate_user_code, to_base64
+from ..tools.utils import generate_user_code, to_base64, generate_uuid_id
 
 user_route = APIRouter(
     tags=["User"],
@@ -22,7 +22,9 @@ async def create_user(
         payload:CreateAccountRequest
 ):
     user_code = await generate_user_code(name=payload.name)
+    user_id = await generate_uuid_id()
     user_details={
+        "_id":user_id,
         "user_code":user_code,
         "name":payload.name,
         "username":payload.username,
@@ -37,7 +39,8 @@ async def create_user(
     mongo_check = await MongoDB(
         database=settings.USER_IDENTITY,
         collection_name=settings.USERS_LIST,
-    ).read_entry(filter_param={"username":user_details["username"]})
+        filter_param={"username": user_details["username"]}
+    ).read_entry()
 
     if neo_check["username_exists"] and mongo_check:
         return {"message":"Username already exists!"}
@@ -93,63 +96,91 @@ async def user_login(
     else:
         return LoginResponseModel(access_token=token)
 
-# @user_route.delete(
-#     path="/delete_user/{user_id}",
-#     response_model=BaseResponseModel
-# )
-# async def user_delete(
-#         user_id:Annotated[str, Path()]
-# ):
-#
-#     response = MongoDB(
-#         database=
-#     ).read_entry()
-#
-#     filter_param = {"user_id":user_id}
-#     result = await Neo4jDB(
-#         query=DELETE_QUERY,
-#         user_details=filter_param
-#     ).db_action()
-#
-# @user_route.patch(
-#     path="/update_user/{user_id}",
-#     response_model=BaseResponseModel
-# )
-# async def user_update(
-#         user_id:Annotated[str, Path()]
-# ):
-#     response =
 
-@user_route.post("/search/{user_id}")
+@user_route.post(
+    path="/search",
+    response_model=SearchResponseModel
+)
 async def user_search(
-        filter_param:dict
+        payload:UserSearch
 ):
-    key = filter_param["key"]
+    key = payload.key
+    param = payload.param
+
+    user_details={"param":param}
 
     result = await Neo4jDB(
         query=search_query(key),
-        user_details=filter_param
+        user_details=user_details
     ).db_action()
 
-    if not result:
-        raise HTTPException(status_code=401, detail="User not found!")
+    if result:
+        user_result = await MongoDB(
+            database=settings.USER_IDENTITY,
+            collection_name=settings.USERS_LIST,
+            filter_param={key: param}
+        ).read_entry()
     else:
-        return result
+        raise HTTPException(status_code=401, detail="User not found!")
+
+    if result and user_result:
+        user = {
+            "username":user_result["username"],
+            "name":user_result["name"],
+            "account_privacy":user_result["account_privacy"]
+        }
+        return user
+
+
+@user_route.patch(
+    path="/edit_user",
+    response_model=BaseResponseModel
+)
+async def user_edit(
+        user_id:str,
+        payload:dict
+):
+
+    # user_details = await MongoDB(
+    #     database=settings.USER_IDENTITY,
+    #     collection_name=settings.USERS_LIST
+    # ).read_entry(filter_param={"_id":user_id})
+
+    new_user = {**payload}
+
+    result = await MongoDB(
+        database=settings.USER_IDENTITY,
+        collection_name=settings.USERS_LIST,
+        document=new_user,
+        filter_param={"_id":user_id}
+    ).edit_entry()
+
+    if result:
+        return {"message":"User updated successfully!"}
+    else:
+        raise HTTPException(status_code=401, detail="User update error!")
+
 
 @user_route.post("/user_post")
 async def upload_post(
         # current_user:get_current_user(),
-        post:UploadFile,
-        payload:UploadPostModel
+        caption:str = Form(...),
+        created_at:str = Form(...),
+        post:UploadFile = File(...)
 ):
-    post_image = to_base64(post)
-    caption = payload.get("caption")
+    post_image = await to_base64(post)
+
     post_content = {
+        "_id": await generate_uuid_id(),
         "image":post_image,
-        "caption":caption
+        "caption":caption,
+        "created_at":created_at
     }
+
     result = await MongoDB(
-        database="",
+        database="GOVI2302",
         collection_name="posts",
         document=post_content
     ).write_entry()
+
+    return result

@@ -1,5 +1,6 @@
 from typing import Literal
 from pydantic import BaseModel
+from datetime import datetime
 
 class LoginRequestModel(BaseModel):
     username:str
@@ -17,6 +18,10 @@ class CreateAccountRequest(BaseModel):
     active:bool | None = True
     created_at: str
 
+class UserSearch(BaseModel):
+    key:str
+    param:str
+
 class ChatModel(BaseModel):
     to_id:str
     chat:str
@@ -24,4 +29,4 @@ class ChatModel(BaseModel):
 
 class UploadPostModel(BaseModel):
     caption:str
-    created_at:str
+    created_at:str = datetime.now().strftime("%d-%m-%Y %H:%M")
