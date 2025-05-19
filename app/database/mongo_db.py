@@ -28,6 +28,10 @@ class MongoDB:
         await self.database.create_collection(name="reactions")
         return self
 
+    async def delete_db(self):
+        await mongo_client.drop_database(name_or_database=self.database)
+        return self
+
     async def read_entry(
             self,
     ) -> dict:
@@ -36,9 +40,13 @@ class MongoDB:
 
     async def write_entry(self):
         result = await self.database[self.collection_name].insert_one(document=self.document)
-        return "result"
+        return result
 
     async def edit_entry(self):
         result = await (self.database[self.collection_name]
                         .find_one_and_update(filter=self.filter_param, update={"$set":{**self.document}}))
+        return result
+
+    async def delete_entry(self):
+        result = await self.database[self.collection_name].delete_one(filter=self.filter_param)
         return result

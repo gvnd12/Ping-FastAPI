@@ -20,7 +20,7 @@ RETURN user.username AS username,user.password AS password
 """
 
 DELETE_QUERY = """
-MATCH (user:User {username: $username})
+MATCH (user:User {_id: $_id})
 DETACH DELETE user
 """
 

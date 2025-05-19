@@ -5,11 +5,18 @@ from jose import jwt
 from typing import Any
 from .config import settings
 
-def _jwt_encode(context:dict, identity:str):
+now = datetime.now(UTC)
+expires_delta = timedelta(minutes=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+
+def _jwt_encode(context:dict):
     return jwt.encode(
-        claims=context,
+        claims={
+            "iat": now,
+            "exp": now + expires_delta,
+            "context": context
+        },
         key=str(settings.SECRET_KEY),
-        algorithm=settings.JWT_ALGORITHM
+        algorithm=settings.JWT_ALGORITHM,
     )
 
 def _jwt_decode(token:str):

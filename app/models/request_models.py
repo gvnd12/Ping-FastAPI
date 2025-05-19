@@ -5,7 +5,6 @@ from datetime import datetime
 class LoginRequestModel(BaseModel):
     username:str
     password:str
-    created_at: str
 
 class CreateAccountRequest(BaseModel):
     name:str
@@ -26,7 +25,3 @@ class ChatModel(BaseModel):
     to_id:str
     chat:str
     created_at: str
-
-class UploadPostModel(BaseModel):
-    caption:str
-    created_at:str = datetime.now().strftime("%d-%m-%Y %H:%M")
