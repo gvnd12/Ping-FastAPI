@@ -13,3 +13,7 @@ class SearchResponseModel(BaseModel):
     username:str
     name:str
     account_privacy:str
+
+class A(BaseModel):
+    posts:list[dict]
+    post_count:int

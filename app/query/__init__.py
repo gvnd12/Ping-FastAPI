@@ -1,8 +1,3 @@
-from .graph_query import CREATE_USER_QUERY, LOGIN_USER_QUERY, CHECK_DUPLICATE, DELETE_QUERY
+from .graph_query import queryclass
 
-__all__ = [
-    "CREATE_USER_QUERY",
-    "LOGIN_USER_QUERY",
-    "CHECK_DUPLICATE",
-    "DELETE_QUERY"
-]
+__all__ = ["queryclass"]

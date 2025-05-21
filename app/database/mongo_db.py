@@ -11,7 +11,7 @@ class MongoDB:
             database:str,
             collection_name:str | None = None,
             filter_param:dict | None = None,
-            document:dict | None = None
+            document:dict | None = None,
     ):
         self.database = mongo_client[database]
         self.collection_name = collection_name
@@ -26,16 +26,27 @@ class MongoDB:
         await self.database.create_collection(name="pings")
         await self.database.create_collection(name="posts")
         await self.database.create_collection(name="reactions")
+        await self.database.create_collection(name="followers")
+        await self.database.create_collection(name="following")
         return self
 
     async def delete_db(self):
         await mongo_client.drop_database(name_or_database=self.database)
         return self
 
-    async def read_entry(
-            self,
-    ) -> dict:
+    async def read_entry(self)->dict:
         result = await self.database[self.collection_name].find_one(filter=self.filter_param)
+        return result
+
+    async def read_many(self)->list:
+        result = self.database[self.collection_name].find(filter=self.filter_param)
+        results = []
+        async for record in result:
+            results.append(record)
+        return results
+
+    async def document_count(self):
+        result = await self.database[self.collection_name].count_documents(filter=self.filter_param)
         return result
 
     async def write_entry(self):

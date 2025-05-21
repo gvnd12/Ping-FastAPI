@@ -16,6 +16,8 @@ class CreateAccountRequest(BaseModel):
     account_privacy:Literal["Public", "Private"]
     active:bool | None = True
     created_at: str
+    is_active:bool
+    is_deleted:bool
 
 class UserSearch(BaseModel):
     key:str
