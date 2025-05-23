@@ -39,7 +39,12 @@ class MongoDB:
         return result
 
     async def read_many(self)->list:
-        result = self.database[self.collection_name].find(filter=self.filter_param)
+        regex_filter = {
+            key: {"$regex": f"^{value}", "$options": "i"}
+            for key, value in self.filter_param.items()
+            if isinstance(value, str)
+        }
+        result = self.database[self.collection_name].find(filter=regex_filter)
         results = []
         async for record in result:
             results.append(record)
@@ -59,5 +64,6 @@ class MongoDB:
         return result
 
     async def delete_entry(self):
-        result = await self.database[self.collection_name].delete_one(filter=self.filter_param)
+        result = await (self.database[self.collection_name]
+                        .update_many(filter=self.filter_param,update={"$set":{"is_deleted":True}}))
         return result

@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Path
-from app.models import LoginRequestModel, LoginResponseModel, UserIdentity, SearchResponseModel
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Path, status
+from app.models import LoginRequestModel, LoginResponseModel, UserIdentity, SearchResponseModel, ProfileResponseModel
 from app.models import BaseResponseModel, CreateAccountRequest, UserSearch, User
 from app.database import Neo4jDB, MongoDB
 from app.query import queryclass
@@ -50,18 +50,20 @@ async def create_user(
         filter_param={"username": user_details["username"]}
     ).read_entry()
 
-    if neo_check["username_exists"] and mongo_check:
+    if neo_check[0]["username_exists"] and mongo_check:
         return {"message":"Username already exists!"}
     else:
         await Neo4jDB(
             user_details=user_details,
             query=queryclass.CREATE_USER_QUERY
         ).db_action()
+
         await MongoDB(
             database=settings.USER_IDENTITY,
             collection_name=settings.USERS_LIST,
             document=user_details
         ).create_user_identity()
+
         await MongoDB(database=user_code).create_collection()
 
         return {"message":"User creation Successful!"}
@@ -114,25 +116,23 @@ async def edit_user(
             collection_name=settings.USERS_LIST,
             filter_param={"username":payload["username"]}
         ).read_entry()
-
         if username_check:
             return {"message":"Username already exists!"}
 
+    result = await MongoDB(
+        database=settings.USER_IDENTITY,
+        collection_name=settings.USERS_LIST,
+        document=payload,
+        filter_param={"_id":current_user["_id"]}
+    ).edit_entry()
+
+    if result:
+        return {"message":"User updated successfully!"}
     else:
-        result = await MongoDB(
-            database=settings.USER_IDENTITY,
-            collection_name=settings.USERS_LIST,
-            document=payload,
-            filter_param={"_id":current_user["_id"]}
-        ).edit_entry()
-
-        if result:
-            return {"message":"User updated successfully!"}
-        else:
-            raise HTTPException(status_code=401, detail="User update error!")
+        raise HTTPException(status_code=401, detail="User update error!")
 
 
-@user_route.delete(
+@user_route.post(
     path="/delete_user",
     response_model=BaseResponseModel
 )
@@ -144,26 +144,27 @@ async def delete_user(
     mongo_result = await MongoDB(
         database=settings.USER_IDENTITY,
         collection_name=settings.USERS_LIST,
-        filter_param={"_id":user_id}
-    ).delete_entry()
-
-    mongo_drop_db = await MongoDB(
-        database=current_user["user_code"],
-    ).delete_db()
+        filter_param={
+            "_id":user_id,
+            "is_deleted":False
+        },
+        document={"is_deleted":True}
+    ).edit_entry()
 
     neo4j_result = await Neo4jDB(
         user_details={"_id":user_id},
         query=queryclass.DELETE_QUERY
     ).db_action()
 
-    if mongo_result and mongo_drop_db:
+    if mongo_result:
         return {"message":"User deleted successfully!"}
     else:
         return {"message":"Something went wrong!"}
 
 
 @user_route.get(
-    path="/profile"
+    path="/profile",
+    response_model=ProfileResponseModel
 )
 async def user_profile(
         current_user:Annotated[User, Depends(get_current_user)]
@@ -173,21 +174,21 @@ async def user_profile(
     user_posts = await MongoDB(
         database=user_code,
         collection_name=settings.POSTS,
+        filter_param={"is_deleted":False}
     ).read_many()
+
     post_count = await MongoDB(
         database=user_code,
         collection_name=settings.POSTS,
-        filter_param={}
+        filter_param={"is_deleted":False}
     ).document_count()
 
-    doc = {"user_posts":user_posts,
-           "post_count":post_count}
-    return doc
+    return ProfileResponseModel(posts=user_posts, post_count=post_count)
 
 
 @user_route.post(
     path="/search",
-    # response_model=SearchResponseModel
+    response_model=SearchResponseModel
 )
 async def user_search(
         payload:UserSearch,
@@ -198,13 +199,15 @@ async def user_search(
 
     user_details={"param":param}
 
-    result = await Neo4jDB(
+    neo_result = await Neo4jDB(
         query=queryclass.search_query(key),
         user_details=user_details
     ).db_action()
 
-    if result:
-        user_result = await MongoDB(
+    neo_results = neo_result
+
+    if neo_results:
+        mongo_result = await MongoDB(
             database=settings.USER_IDENTITY,
             collection_name=settings.USERS_LIST,
             filter_param={key: param}
@@ -212,13 +215,7 @@ async def user_search(
     else:
         raise HTTPException(status_code=401, detail="User not found!")
 
-    # if result and user_result:
-    #     user = {
-    #         "username":user_result["username"],
-    #         "name":user_result["name"],
-    #         "account_privacy":user_result["account_privacy"]
-    #     }
-    return {"neoresult":result,"mongo":user_result}
+    return SearchResponseModel(users=mongo_result)
 
 
 @user_route.post(
@@ -236,7 +233,8 @@ async def upload_post(
         "_id": await generate_uuid_id(),
         "image":post_image,
         "caption":caption,
-        "created_at":datetime.now(UTC)
+        "created_at":datetime.now(UTC),
+        "is_deleted":False
     }
 
     database = current_user["user_code"]
@@ -254,7 +252,7 @@ async def upload_post(
 
 
 @user_route.delete(
-    path="/user_post",
+    path="/delete_post",
     response_model=BaseResponseModel
 )
 async def delete_post(
@@ -274,6 +272,7 @@ async def delete_post(
     else:
         return {"message":"Something went wrong!"}
 
+
 @user_route.post(
     path="/follow",
 )
@@ -281,29 +280,104 @@ async def user_follow(
         current_user:Annotated[User, Depends(get_current_user)],
         username:str
 ):
-    database = current_user["user_code"]
-    user_to_follow = await UserIdentity(
-        username=username
-    ).get_user_with_username()
+    try:
+        user_to_follow = await UserIdentity(
+            username=username
+        ).get_user_with_username()
 
-    follow_document = {
-        "_id":user_to_follow["_id"],
-        "username":user_to_follow["username"],
-        "created_at":datetime.now(UTC)
-    }
+        following_document = {
+            "_id":user_to_follow["_id"],
+            "user_code":user_to_follow["user_code"],
+            "username":user_to_follow["username"],
+            "created_at":datetime.now(UTC)
+        }
 
-    mongo_result = await MongoDB(
-        database=database,
-        collection_name=settings.FOLLOWING,
-        document=follow_document
-    ).write_entry()
+        follower_document = {
+            "_id": current_user["_id"],
+            "user_code": current_user["user_code"],
+            "username": current_user["username"],
+            "created_at": datetime.now(UTC)
+        }
 
-    neo_result = await Neo4jDB(
-        user_details={
-            "current_user_id":current_user["_id"],
-            "user_to_follow_id":user_to_follow["_id"]
-        },
-        query=queryclass.FOLLOW_QUERY
-    ).db_action()
+        mongo_followers_result = await MongoDB(
+            database=follower_document["user_code"],
+            collection_name=settings.FOLLOWING,
+            document=following_document
+        ).write_entry()
 
-    return {"message":"User followed!"}
+        mongo_following_result = await MongoDB(
+            database=following_document["user_code"],
+            collection_name=settings.FOLLOWERS,
+            document=follower_document
+        ).write_entry()
+
+        neo_result = await Neo4jDB(
+            user_details={
+                "current_user_id":current_user["_id"],
+                "user_to_follow_id":user_to_follow["_id"]
+            },
+            query=queryclass.FOLLOW_QUERY
+        ).db_action()
+
+        return {"message":"User followed!"}
+
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Something went wrong!",
+        )
+
+
+@user_route.delete(
+    path="/unfollow",
+)
+async def user_unfollow(
+        current_user:Annotated[User, Depends(get_current_user)],
+        username:str
+):
+    try:
+        user_to_unfollow = await UserIdentity(
+            username=username
+        ).get_user_with_username()
+
+        following_document = {
+            "_id":user_to_unfollow["_id"],
+            "user_code":user_to_unfollow["user_code"],
+            "username":user_to_unfollow["username"],
+            "created_at":datetime.now(UTC)
+        }
+
+        follower_document = {
+            "_id": current_user["_id"],
+            "user_code": current_user["user_code"],
+            "username": current_user["username"],
+            "created_at": datetime.now(UTC)
+        }
+
+        mongo_followers_result = await MongoDB(
+            database=follower_document["user_code"],
+            collection_name=settings.FOLLOWING,
+            filter_param={"_id":following_document["_id"]}
+        ).delete_entry()
+
+        mongo_following_result = await MongoDB(
+            database=following_document["user_code"],
+            collection_name=settings.FOLLOWERS,
+            filter_param={"_id":follower_document["_id"]}
+        ).delete_entry()
+
+        neo_result = await Neo4jDB(
+            user_details={
+                "current_user_id":current_user["_id"],
+                "user_to_unfollow_id":user_to_unfollow["_id"]
+            },
+            query=queryclass.UNFOLLOW_QUERY
+        ).db_action()
+
+        return {"message":"User unfollowed!"}
+
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Something went wrong!",
+        )

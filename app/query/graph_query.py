@@ -7,7 +7,10 @@ class QueryClass(BaseSettings):
     user_code:$user_code,
     name:$name,
     username:$username,
-    account_privacy:$account_privacy})
+    account_privacy:$account_privacy,
+    is_active:$is_active,
+    is_deleted:$is_deleted
+    })
     RETURN user.user_code AS user_code
     """
 
@@ -23,10 +26,12 @@ class QueryClass(BaseSettings):
     """
 
     DELETE_QUERY:str = """
-    MATCH (user:User {_id: $_id})
-    DETACH DELETE user
+    MATCH (user:User)
+    WHERE user.user_id = $_id
+    SET user.is_deleted = true
     """
 
+    @staticmethod
     def edit_query(update_dict:dict):
         for key, value in update_dict.items():
             EDIT_QUERY:str = f"""
@@ -36,6 +41,7 @@ class QueryClass(BaseSettings):
             """
         return EDIT_QUERY
 
+    @staticmethod
     def search_query(key:str):
         SEARCH_QUERY:str = f"""
         MATCH (user:User)
@@ -47,6 +53,11 @@ class QueryClass(BaseSettings):
     FOLLOW_QUERY:str = """
     MATCH (current_user:User {_id: $current_user_id}), (user_to_follow:User {_id:$user_to_follow_id})
     CREATE (current_user)-[:FOLLOWS]->(user_to_follow)
+    """
+
+    UNFOLLOW_QUERY: str = """
+    MATCH (current_user:User {_id: $current_user_id})-[r: FOLLOWS]->(user_to_unfollow:User {_id:$user_to_unfollow_id})
+    DELETE r
     """
 
 queryclass = QueryClass()

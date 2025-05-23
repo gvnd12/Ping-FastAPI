@@ -10,10 +10,8 @@ class CreateUserResponseModel(BaseModel):
     result:dict
 
 class SearchResponseModel(BaseModel):
-    username:str
-    name:str
-    account_privacy:str
+    users:list[dict]
 
-class A(BaseModel):
+class ProfileResponseModel(BaseModel):
     posts:list[dict]
     post_count:int

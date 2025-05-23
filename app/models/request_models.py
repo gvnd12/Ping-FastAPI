@@ -14,10 +14,9 @@ class CreateAccountRequest(BaseModel):
     date_of_birth:int
     gender:Literal["Male", "Female"]
     account_privacy:Literal["Public", "Private"]
-    active:bool | None = True
     created_at: str
-    is_active:bool
-    is_deleted:bool
+    is_active:bool = True
+    is_deleted:bool = False
 
 class UserSearch(BaseModel):
     key:str

@@ -1,6 +1,7 @@
 from typing import LiteralString
 from neo4j import AsyncGraphDatabase
 from app.core.config import settings
+from app.query import queryclass
 
 graph_client = AsyncGraphDatabase.driver(
     uri= settings.NEO4J_URI,
@@ -22,5 +23,5 @@ class Neo4jDB:
                 query=self.query,
                 parameters=self.user_details
             )
-            record = await result.single()
+            record = await result.data()
         return record

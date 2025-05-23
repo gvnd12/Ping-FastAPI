@@ -15,5 +15,8 @@ class UserIdentity:
         return await MongoDB(
             database=settings.USER_IDENTITY,
             collection_name=settings.USERS_LIST,
-            filter_param = {"username": self.username}
+            filter_param = {
+                "username": self.username,
+                "is_deleted":False
+            }
         ).read_entry()
