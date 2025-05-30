@@ -1,7 +1,7 @@
 from fastapi import status, Depends
 from fastapi.exceptions import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from app.models import User, UserIdentity
+from app.schemas import User, UserIdentity
 from app.core.jwt_manager import _jwt_decode
 
 class PingSecurity(HTTPBearer): ...

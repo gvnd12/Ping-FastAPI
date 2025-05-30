@@ -9,7 +9,7 @@ class MongoDB:
     def __init__(
             self,
             database:str,
-            collection_name:str | None = None,
+            collection_name:str,
             filter_param:dict | None = None,
             document:dict | None = None,
     ):
@@ -60,10 +60,9 @@ class MongoDB:
 
     async def edit_entry(self):
         result = await (self.database[self.collection_name]
-                        .find_one_and_update(filter=self.filter_param, update={"$set":{**self.document}}))
+                        .find_one_and_update(filter=self.filter_param, update=self.document))
         return result
 
     async def delete_entry(self):
-        result = await (self.database[self.collection_name]
-                        .update_many(filter=self.filter_param,update={"$set":{"is_deleted":True}}))
+        result = await self.database[self.collection_name].delete_one(filter=self.filter_param)
         return result

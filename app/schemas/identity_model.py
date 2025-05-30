@@ -17,6 +17,7 @@ class UserIdentity:
             collection_name=settings.USERS_LIST,
             filter_param = {
                 "username": self.username,
-                "is_deleted":False
+                "is_deleted":False,
+                "is_active":True
             }
         ).read_entry()

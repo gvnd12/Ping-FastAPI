@@ -22,6 +22,10 @@ class UserSearch(BaseModel):
     key:str
     param:str
 
+class PostLikeRequestModel(BaseModel):
+    post_id: str
+    username: str
+
 class ChatModel(BaseModel):
     to_id:str
     chat:str

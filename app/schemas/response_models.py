@@ -15,3 +15,7 @@ class SearchResponseModel(BaseModel):
 class ProfileResponseModel(BaseModel):
     posts:list[dict]
     post_count:int
+    followers_count:int
+    following_count:int
+
+# class FeedResponseModel(BaseModel):

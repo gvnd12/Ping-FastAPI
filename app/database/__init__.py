@@ -1,4 +1,4 @@
-from .mongo_db import MongoDB
+from .mongodb import MongoDB
 from .graph_db import graph_client, Neo4jDB
 
 __all__ = [

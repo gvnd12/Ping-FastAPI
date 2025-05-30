@@ -11,17 +11,17 @@ graph_client = AsyncGraphDatabase.driver(
 class Neo4jDB:
     def __init__(
             self,
-            user_details:dict,
+            parameters:dict,
             query:LiteralString,
     ):
-        self.user_details = user_details
+        self.parameters = parameters
         self.query = query
 
     async def db_action(self):
         async with graph_client.session() as session:
             result = await session.run(
                 query=self.query,
-                parameters=self.user_details
+                parameters=self.parameters
             )
             record = await result.data()
         return record
