@@ -26,6 +26,11 @@ class PostLikeRequestModel(BaseModel):
     post_id: str
     username: str
 
+class CommentRequestModel(BaseModel):
+    post_id:str
+    username:str
+    comment:str
+
 class ChatModel(BaseModel):
     to_id:str
     chat:str

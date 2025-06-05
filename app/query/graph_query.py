@@ -41,14 +41,12 @@ class QueryClass(BaseSettings):
             """
         return EDIT_QUERY
 
-    @staticmethod
-    def search_query(key:str):
-        SEARCH_QUERY:str = f"""
-        MATCH (user:User)
-        WHERE toLower(user.{key}) STARTS WITH toLower($param)
-        RETURN user
-        """
-        return SEARCH_QUERY
+    SEARCH_QUERY:str = """
+    MATCH (user:User)
+    WHERE toLower(user.username) STARTS WITH toLower($param) 
+    OR toLower(user.name) STARTS WITH toLower($param)
+    RETURN user
+    """
 
     FOLLOW_QUERY:str = """
     MATCH (current_user:User {_id: $current_user_id}), (user_to_follow:User {_id:$user_to_follow_id})

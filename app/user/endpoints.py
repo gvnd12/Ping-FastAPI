@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Path, status
 from app.schemas import LoginRequestModel, LoginResponseModel, UserIdentity, SearchResponseModel, ProfileResponseModel
-from app.schemas import BaseResponseModel, CreateAccountRequest, UserSearch, User
+from app.schemas import BaseResponseModel, CreateAccountRequest, UserSearch, User, CommentRequestModel
 from app.database import Neo4jDB, MongoDB
 from app.query import queryclass
 from app.core.config import settings
@@ -24,6 +24,8 @@ user_route = APIRouter(
 async def create_user(
         payload:CreateAccountRequest
 ):
+
+
     user_code = await generate_user_code(name=payload.name)
     user_id = await generate_uuid_id()
     user_details={
@@ -218,21 +220,41 @@ async def user_profile(
         current_user:Annotated[User, Depends(get_current_user)],
         username:str | None = None
 ):
-    if username:
+    if username is None:
+        username=current_user["username"]
+        user_code = current_user["user_code"]
+        user_id = current_user["_id"]
+    else:
         user = await UserIdentity(
             username=username
         ).get_user_with_username()
         if user:
             user_code = user["user_code"]
+            user_id = user["_id"]
         else:
             return BaseResponseModel(message="User does not exist!")
-    else:
-        user_code = current_user["user_code"]
+
+    is_following = False
+    current_user_profile = True
+
+    if user_code!=current_user["user_code"]:
+        current_user_profile = False
+        following_check = await MongoDB(
+            database=current_user["user_code"],
+            collection_name=settings.FOLLOWING,
+            filter_param={
+                "_id":user_id,
+                "is_deleted": False,
+                "is_active": True
+            }
+        ).read_entry()
+        if following_check:
+            is_following = True
 
     user_posts = await MongoDB(
         database=user_code,
         collection_name=settings.POSTS,
-        filter_param={"is_deleted":False}
+        filter_param={"is_deleted":False,}
     ).read_many()
 
     post_count = await MongoDB(
@@ -244,20 +266,28 @@ async def user_profile(
     followers_count = await MongoDB(
         database=user_code,
         collection_name=settings.FOLLOWERS,
-        filter_param={"is_deleted":False}
+        filter_param={
+            "is_deleted":False,
+            "is_active":True
+        }
     ).document_count()
 
     following_count = await MongoDB(
         database=user_code,
         collection_name=settings.FOLLOWING,
-        filter_param={"is_deleted": False}
+        filter_param={
+            "is_deleted": False,
+            "is_active":True
+        }
     ).document_count()
 
     return ProfileResponseModel(
         posts=user_posts,
         post_count=post_count,
         followers_count=followers_count,
-        following_count=following_count
+        following_count=following_count,
+        is_following=is_following,
+        current_user_profile=current_user_profile
     )
 
 
@@ -274,12 +304,10 @@ async def user_search(
 
     user_details={"param":param}
 
-    neo_result = await Neo4jDB(
-        query=queryclass.search_query(key),
+    neo_results = await Neo4jDB(
+        query=queryclass.SEARCH_QUERY,
         parameters=user_details
     ).db_action()
-
-    neo_results = neo_result
 
     if neo_results:
         mongo_result = await MongoDB(
@@ -310,6 +338,7 @@ async def upload_post(
         "caption":caption,
         "like_count":0,
         "liked_by":[],
+        "comment_count":0,
         "comments":[],
         "created_at":datetime.now(UTC),
         "is_deleted":False
@@ -351,6 +380,36 @@ async def like_post(
     ).edit_entry()
 
     return register_like
+
+
+@user_route.post(
+    path="/comment"
+)
+async def user_comment(
+        current_user:Annotated[User, Depends(get_current_user)],
+        payload:CommentRequestModel
+):
+    user = await UserIdentity(
+        username=payload.username
+    ).get_user_with_username()
+
+    comment_doc = {
+        "username":current_user["username"],
+        "comment":payload.comment,
+        "created_at":datetime.now(UTC)
+    }
+
+    post_comment = await MongoDB(
+        database=user["user_code"],
+        collection_name=settings.POSTS,
+        filter_param={"_id": payload.post_id},
+        document={
+            "$inc": {"comment_count": 1},
+            "$addToSet": {"comments": comment_doc}
+        }
+    ).edit_entry()
+
+    return {"message":"Comment registered!"}
 
 
 @user_route.delete(
@@ -427,7 +486,6 @@ async def user_follow(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="User already followed!"
                 )
-
             else:
                 await MongoDB(
                     database=follower_document["user_code"],
@@ -572,4 +630,4 @@ async def ping(
         }
     ).write_entry()
 
-    return BaseResponseModel(message="Ping successful!")
+    return BaseResponseModel(message="Ping posted!")

@@ -1,4 +1,4 @@
-from app.schemas.request_models import LoginRequestModel, CreateAccountRequest, ChatModel, UserSearch
+from app.schemas.request_models import LoginRequestModel, CreateAccountRequest, ChatModel, UserSearch, CommentRequestModel
 from app.schemas.response_models import LoginResponseModel, BaseResponseModel, CreateUserResponseModel, SearchResponseModel
 from app.schemas.response_models import ProfileResponseModel
 from app.schemas.common_models import User
@@ -15,5 +15,6 @@ __all__ = [
     "CreateUserResponseModel",
     "UserSearch",
     "SearchResponseModel",
-    "ProfileResponseModel"
+    "ProfileResponseModel",
+    "CommentRequestModel"
 ]

@@ -9,7 +9,7 @@ class MongoDB:
     def __init__(
             self,
             database:str,
-            collection_name:str,
+            collection_name:str | None = None,
             filter_param:dict | None = None,
             document:dict | None = None,
     ):

@@ -17,5 +17,7 @@ class ProfileResponseModel(BaseModel):
     post_count:int
     followers_count:int
     following_count:int
+    is_following:bool
+    current_user_profile:bool
 
 # class FeedResponseModel(BaseModel):
