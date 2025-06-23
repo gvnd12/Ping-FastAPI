@@ -25,7 +25,6 @@ class MongoDB:
         await self.database.create_collection(name="chats")
         await self.database.create_collection(name="pings")
         await self.database.create_collection(name="posts")
-        await self.database.create_collection(name="reactions")
         await self.database.create_collection(name="followers")
         await self.database.create_collection(name="following")
         return self

@@ -2,50 +2,52 @@ from pydantic_settings import BaseSettings
 
 class QueryClass(BaseSettings):
     CREATE_USER_QUERY:str = """
-    CREATE(user:User{
+    CREATE(u:User{
     _id:$_id,
     user_code:$user_code,
     name:$name,
+    email:$email,
     username:$username,
     account_privacy:$account_privacy,
     is_active:$is_active,
     is_deleted:$is_deleted
     })
-    RETURN user.user_code AS user_code
+    RETURN u.user_code AS user_code
     """
 
     CHECK_DUPLICATE:str = """
     RETURN EXISTS {
-      MATCH (u:User {username: $username})
-    } AS username_exists;
+    MATCH (u:User)
+    WHERE u.username = $username OR u.email = $email
+    } AS username_or_email_exists;
     """
 
     LOGIN_USER_QUERY:str = """
-    MATCH (user:User{username:$username,password:$password})
-    RETURN user.username AS username,user.password AS password
+    MATCH (api:User{username:$username,password:$password})
+    RETURN api.username AS username,api.password AS password
     """
 
     DELETE_QUERY:str = """
-    MATCH (user:User)
-    WHERE user.user_id = $_id
-    SET user.is_deleted = true
+    MATCH (api:User)
+    WHERE api.user_id = $_id
+    SET api.is_deleted = true
     """
 
     @staticmethod
     def edit_query(update_dict:dict):
         for key, value in update_dict.items():
             EDIT_QUERY:str = f"""
-            MATCH (user:User)
-            WHERE user.user_id = $_id
-            SET user.{key} = ${value}
+            MATCH (api:User)
+            WHERE api.user_id = $_id
+            SET api.{key} = ${value}
             """
         return EDIT_QUERY
 
     SEARCH_QUERY:str = """
-    MATCH (user:User)
-    WHERE toLower(user.username) STARTS WITH toLower($param) 
-    OR toLower(user.name) STARTS WITH toLower($param)
-    RETURN user
+    MATCH (api:User)
+    WHERE toLower(api.username) STARTS WITH toLower($param) 
+    OR toLower(api.name) STARTS WITH toLower($param)
+    RETURN api
     """
 
     FOLLOW_QUERY:str = """

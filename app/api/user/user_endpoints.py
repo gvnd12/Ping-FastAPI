@@ -1,109 +1,72 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Path, status
-from app.schemas import LoginRequestModel, LoginResponseModel, UserIdentity, SearchResponseModel, ProfileResponseModel
-from app.schemas import BaseResponseModel, CreateAccountRequest, UserSearch, User, CommentRequestModel
-from app.database import Neo4jDB, MongoDB
-from app.query import queryclass
-from app.core.config import settings
-from app.core.jwt_manager import _jwt_encode
 from datetime import datetime, UTC
 from typing import Annotated
-
-from ..schemas.request_models import PostLikeRequestModel
-from ..tools.utils import generate_user_code, to_base64, generate_uuid_id
-from ..tools.deps import get_current_user
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, status
+from app.core.config import settings
+from app.database import Neo4jDB, MongoDB
+from app.models import UserOP
+from app.query import queryclass
+from app.schemas import LoginRequestModel, UserIdentity, SearchResponseModel, ProfileResponseModel, ChangePasswordRequest
+from app.schemas import BaseResponseModel, CreateAccountRequest, UserSearch, User, CommentRequestModel
+from app.schemas.request_models import PostLikeRequestModel
+from app.tools.utils import generate_user_code, to_base64, generate_uuid_id, password_hash
+from app.tools.deps import get_current_user
 
 user_route = APIRouter(
     tags=["User"],
-    prefix="/user"
+    prefix="/api/user"
 )
 
 @user_route.post(
-    path="/user_signup",
+    path="/signup",
     response_model=BaseResponseModel,
 )
 async def create_user(
         payload:CreateAccountRequest
 ):
-
-
     user_code = await generate_user_code(name=payload.name)
     user_id = await generate_uuid_id()
-    user_details={
-        "_id":user_id,
-        "user_code":user_code,
-        "name":payload.name.capitalize(),
-        "username":payload.username,
-        "password":payload.password,
-        "mobile_no":payload.mobile_no,
-        "date_of_birth":payload.date_of_birth,
-        "gender":payload.gender,
-        "account_privacy":payload.account_privacy,
-        "created_at":datetime.now(UTC),
-        "is_active":payload.is_active,
-        "is_deleted":payload.is_deleted
+    hashed_password = await password_hash(payload.password)
+    user_details = {
+        "_id": user_id,
+        "user_code": user_code,
+        "name": payload.name.capitalize(),
+        "email":payload.email,
+        "username": payload.username,
+        "password": hashed_password,
+        "mobile_no": payload.mobile_no,
+        "date_of_birth": payload.date_of_birth,
+        "gender": payload.gender,
+        "account_privacy": payload.account_privacy,
+        "created_at": datetime.now(UTC),
+        "is_active": payload.is_active,
+        "is_deleted": payload.is_deleted
     }
 
-    neo_check = await Neo4jDB(
-        parameters=user_details,
-        query=queryclass.CHECK_DUPLICATE
-    ).db_action()
+    result = await UserOP(
+        document=user_details
+    ).create_user()
 
-    mongo_check = await MongoDB(
-        database=settings.USER_IDENTITY,
-        collection_name=settings.USERS_LIST,
-        filter_param={"username": user_details["username"]}
-    ).read_entry()
-
-    if neo_check[0]["username_exists"] and mongo_check:
-        return BaseResponseModel(message="Username already exists!")
-    else:
-        await Neo4jDB(
-            parameters=user_details,
-            query=queryclass.CREATE_USER_QUERY
-        ).db_action()
-
-        await MongoDB(
-            database=settings.USER_IDENTITY,
-            collection_name=settings.USERS_LIST,
-            document=user_details
-        ).create_user_identity()
-
-        await MongoDB(database=user_code).create_collection()
-
-        return BaseResponseModel(message="User creation Successful!")
+    return BaseResponseModel(message=result)
 
 
-@user_route.post(
-    path="/login",
-    response_model=LoginResponseModel,
+@user_route.patch(
+    path="/change_password",
+    response_model=BaseResponseModel
 )
-async def user_login(
-        payload:LoginRequestModel
+async def change_password(
+        payload:ChangePasswordRequest,
+        current_user:Annotated[User, Depends(get_current_user)]
 ):
-    username=payload.username
-    password=payload.password
-
-    user = await UserIdentity(username=username).get_user_with_username()
-
-    if not user:
-        if username==settings.SUPER_ADMIN_USERNAME and password==settings.SUPER_ADMIN_PASSWORD:
-            token_payload = {
-                "user_type": "SUPER_ADMIN",
-                "username": username,
-                "password": password
-            }
-            token = _jwt_encode(context=token_payload)
-            return LoginResponseModel(access_token=token)
-        else:
-            raise HTTPException(status_code=401, detail="Invalid credentials!")
-    else:
-        token_payload = {
-            "user_type": "USER",
-            "username": username,
-            "password": password
+    result = await UserOP(
+        document={
+            "_id":current_user["_id"],
+            "old_password":payload.old_password,
+            "new_password":payload.new_password,
+            "confirm_password":payload.confirm_password
         }
-        token = _jwt_encode(context=token_payload)
-        return LoginResponseModel(access_token=token)
+    ).change_password()
+
+    return BaseResponseModel(message=result)
 
 
 @user_route.patch(
@@ -114,27 +77,12 @@ async def edit_user(
         payload:dict,
         current_user: Annotated[User, Depends(get_current_user)]
 ):
-    if payload.get("username"):
-        username_check = await MongoDB(
-            database=settings.USER_IDENTITY,
-            collection_name=settings.USERS_LIST,
-            filter_param={
-                "username":payload["username"]}
-        ).read_entry()
-        if username_check:
-            return BaseResponseModel(message="Username already exists!")
+    result = await UserOP(
+        filter_params={"_id":current_user["_id"]},
+        document=payload
+    ).edit_user()
 
-    result = await MongoDB(
-        database=settings.USER_IDENTITY,
-        collection_name=settings.USERS_LIST,
-        document={"$set":{**payload}},
-        filter_param={"_id":current_user["_id"]}
-    ).edit_entry()
-
-    if result:
-        return BaseResponseModel(message="User updated successfully!")
-    else:
-        raise HTTPException(status_code=401, detail="User update error!")
+    return BaseResponseModel(message=result)
 
 
 @user_route.post(

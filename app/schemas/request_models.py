@@ -8,6 +8,7 @@ class LoginRequestModel(BaseModel):
 
 class CreateAccountRequest(BaseModel):
     name:str
+    email:str
     username:str
     password:str
     mobile_no:str
@@ -17,6 +18,11 @@ class CreateAccountRequest(BaseModel):
     created_at: str
     is_active:bool = True
     is_deleted:bool = False
+
+class ChangePasswordRequest(BaseModel):
+    old_password:str
+    new_password:str
+    confirm_password:str
 
 class UserSearch(BaseModel):
     key:str
