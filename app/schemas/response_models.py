@@ -1,23 +1,29 @@
 from pydantic import BaseModel
 
+
 class BaseResponseModel(BaseModel):
-    message:str
+    message: str
+
 
 class LoginResponseModel(BaseModel):
-    access_token:str
+    access_token: str
+
 
 class CreateUserResponseModel(BaseModel):
-    result:dict
+    result: dict
+
 
 class SearchResponseModel(BaseModel):
-    users:list[dict]
+    users: list[dict]
+
 
 class ProfileResponseModel(BaseModel):
-    posts:list[dict]
-    post_count:int
-    followers_count:int
-    following_count:int
-    is_following:bool
-    current_user_profile:bool
+    posts: list[dict]
+    post_count: int
+    followers_count: int
+    following_count: int
+    is_following: bool
+    current_user_profile: bool
+
 
 # class FeedResponseModel(BaseModel):

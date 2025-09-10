@@ -12,4 +12,5 @@ dependencies = [
     "pydantic-settings>=2.8.1",
     "pyjwt>=2.10.1",
     "python-jose>=3.4.0",
+    "ruff>=0.12.0",
 ]
