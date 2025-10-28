@@ -4,16 +4,11 @@ from pydantic_settings import BaseSettings
 class QueryClass(BaseSettings):
     CREATE_USER_QUERY: str = """
     CREATE(u:User{
-    _id:$_id,
-    user_code:$user_code,
+    id:$_id,
     name:$name,
-    email:$email,
-    username:$username,
-    account_privacy:$account_privacy,
-    is_active:$is_active,
-    is_deleted:$is_deleted
+    username:$username
     })
-    RETURN u.user_code AS user_code
+    RETURN u.username AS username
     """
 
     CHECK_DUPLICATE: str = """

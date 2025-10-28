@@ -16,9 +16,6 @@ class CreateAccountRequest(BaseModel):
     date_of_birth: int
     gender: Literal["Male", "Female"]
     account_privacy: Literal["Public", "Private"]
-    created_at: str
-    is_active: bool = True
-    is_deleted: bool = False
 
 
 class ChangePasswordRequest(BaseModel):
@@ -47,3 +44,8 @@ class ChatModel(BaseModel):
     to_id: str
     chat: str
     created_at: str
+
+
+class ReportRequestModel(BaseModel):
+    report_id: str
+    content: str

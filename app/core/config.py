@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     REACTIONS: str = "reactions"
     FOLLOWERS: str = "followers"
     FOLLOWING: str = "following"
+    REPORTS: str = "reports"
 
     # Authentication
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 1  # 60 minutes * 24 hours * 1 = 1 day
@@ -33,6 +34,13 @@ class Settings(BaseSettings):
     SECRET_KEY: SecretStr = "nMBkBb4GY_dSPEmvFaLYM9eWpY-29iyg55EVF3x6wzU="
     JWT_PAYLOAD_ENCRY: SecretStr = "XnxR9vMkx4LfHCbASeWNX48UsRdY3WNUtIMjmLomCvI="
     JWT_ALGORITHM: str = "HS256"
+
+    # Email Service
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    FROM_ADDRESS: str = "mail.pingapp@gmail.com"
+    EMAIL_PASSWORD: str = "kgcoxedsjdzryikk"
+    DEFAULT_EMAIL_FROM: str = "noreply@ping.pg"
 
 
 settings = Settings()

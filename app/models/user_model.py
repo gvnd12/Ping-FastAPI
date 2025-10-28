@@ -2,58 +2,86 @@ from fastapi import HTTPException
 from app.database import MongoDB, Neo4jDB
 from app.query import queryclass
 from app.core.config import settings
-from app.tools.utils import password_hash, verify_password
+from app.tools.utils import (
+    password_hash,
+    verify_password,
+    send_email,
+    generate_user_code,
+)
+from app.tools.common_types import EmailType
 
 
-class UserOP:
+class UserOP(MongoDB):
     def __init__(
         self,
         database: str | None = None,
         collection_name: str | None = None,
         filter_params: dict | None = None,
         document: dict | None = None,
+        **kwargs,
     ):
+        super.__init__(**kwargs)
         self.database = database
         self.collection_name = collection_name
         self.filter_param = filter_params
         self.document = document
 
     async def create_user(self):
-        try:
-            neo_check = await Neo4jDB(
-                parameters=self.document, query=queryclass.CHECK_DUPLICATE
+        # try:
+        neo_check = await Neo4jDB(
+            parameters={
+                "email": self.document["email"],
+                "username": self.document["username"],
+            },
+            query=queryclass.CHECK_DUPLICATE,
+        ).db_action()
+
+        mongo_check = await MongoDB(
+            database=settings.USER_IDENTITY,
+            collection_name=settings.USERS_LIST,
+            filter_param={
+                "$or": [
+                    {"username": self.document["username"]},
+                    {"email": self.document["email"]},
+                ]
+            },
+        ).read_entry()
+
+        if neo_check[0]["username_or_email_exists"] and mongo_check:
+            return {"error": "Username or email already exists!"}
+        else:
+            user_code = await generate_user_code(name=self.document["name"])
+            hashed_password = await password_hash(self.document["password"])
+            await self.prepare_data()
+            self.document.update({"user_code": user_code, "password": hashed_password})
+
+            await Neo4jDB(
+                parameters={
+                    "id": self.document["id"],
+                    "name": self.document["name"],
+                    "username": self.document["username"],
+                },
+                query=queryclass.CREATE_USER_QUERY,
             ).db_action()
 
-            mongo_check = await MongoDB(
+            await MongoDB(
                 database=settings.USER_IDENTITY,
                 collection_name=settings.USERS_LIST,
-                filter_param={
-                    "$or": [
-                        {"username": self.document["username"]},
-                        {"email": self.document["email"]},
-                    ]
-                },
-            ).read_entry()
+                document=self.document,
+            ).create_user_identity()
 
-            if neo_check[0]["username_or_email_exists"] and mongo_check:
-                return {"error": "Username or email already exists!"}
-            else:
-                await Neo4jDB(
-                    parameters=self.document, query=queryclass.CREATE_USER_QUERY
-                ).db_action()
+            await MongoDB(database=self.document["user_code"]).create_collection()
 
-                await MongoDB(
-                    database=settings.USER_IDENTITY,
-                    collection_name=settings.USERS_LIST,
-                    document=self.document,
-                ).create_user_identity()
+            await send_email(
+                mail_type=EmailType.INVITATION,
+                receiver_email=self.document["email"],
+                name=self.document["name"],
+            )
 
-                await MongoDB(database=self.document["user_code"]).create_collection()
+            return {"message": "User created successfully!"}
 
-                return {"message": "User creation Successful!"}
-
-        except Exception:
-            return {"error": "Unexpected error occurred!"}
+        # except Exception:
+        #     return {"error": "Unexpected error occurred!"}
 
     async def edit_user(self):
         try:

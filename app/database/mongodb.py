@@ -1,5 +1,10 @@
 from pymongo import AsyncMongoClient
 from app.core.config import settings
+from app.tools.utils import (
+    generate_uuid_id,
+)
+
+from time import time
 
 mongo_client = AsyncMongoClient(
     host=settings.MONGO_URL,
@@ -19,8 +24,18 @@ class MongoDB:
         self.filter_param = filter_param
         self.document = document
 
+    async def prepare_data(self):
+        return {
+            "_id": generate_uuid_id(),
+            "created_at": int(time()),
+            "is_active": True,
+            "is_deleted": False,
+            **self.document,
+        }
+
     async def create_user_identity(self):
-        await self.database[self.collection_name].insert_one(document=self.document)
+        data = await self.prepare_data()
+        await self.database[self.collection_name].insert_one(document=data)
 
     async def create_collection(self):
         await self.database.create_collection(name="chats")
@@ -28,6 +43,7 @@ class MongoDB:
         await self.database.create_collection(name="posts")
         await self.database.create_collection(name="followers")
         await self.database.create_collection(name="following")
+        await self.database.create_collection(name="reports")
         return self
 
     async def delete_db(self):

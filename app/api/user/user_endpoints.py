@@ -11,6 +11,8 @@ from app.schemas import (
     SearchResponseModel,
     ProfileResponseModel,
     ChangePasswordRequest,
+    PostLikeRequestModel,
+    ReportRequestModel,
 )
 from app.schemas import (
     BaseResponseModel,
@@ -19,12 +21,9 @@ from app.schemas import (
     User,
     CommentRequestModel,
 )
-from app.schemas.request_models import PostLikeRequestModel
 from app.tools.utils import (
-    generate_user_code,
     to_base64,
     generate_uuid_id,
-    password_hash,
 )
 from app.tools.deps import get_current_user
 
@@ -36,23 +35,15 @@ user_route = APIRouter(tags=["User"], prefix="/api/user")
     response_model=BaseResponseModel,
 )
 async def create_user(payload: CreateAccountRequest):
-    user_code = await generate_user_code(name=payload.name)
-    user_id = await generate_uuid_id()
-    hashed_password = await password_hash(payload.password)
     user_details = {
-        "_id": user_id,
-        "user_code": user_code,
         "name": payload.name.capitalize(),
         "email": payload.email,
         "username": payload.username,
-        "password": hashed_password,
+        "password": payload.password,
         "mobile_no": payload.mobile_no,
         "date_of_birth": payload.date_of_birth,
         "gender": payload.gender,
         "account_privacy": payload.account_privacy,
-        "created_at": datetime.now(UTC),
-        "is_active": payload.is_active,
-        "is_deleted": payload.is_deleted,
     }
 
     result = await UserOP(document=user_details).create_user()
@@ -246,15 +237,8 @@ async def upload_post(
     post_image = await to_base64(post)
 
     post_content = {
-        "_id": await generate_uuid_id(),
         "image": post_image,
         "caption": caption,
-        "like_count": 0,
-        "liked_by": [],
-        "comment_count": 0,
-        "comments": [],
-        "created_at": datetime.now(UTC),
-        "is_deleted": False,
     }
 
     database = current_user["user_code"]
@@ -499,3 +483,24 @@ async def ping(
     ).write_entry()
 
     return BaseResponseModel(message="Ping posted!")
+
+
+@user_route.post(path="/report", response_model=BaseResponseModel)
+async def report(
+    current_user: Annotated[User, Depends(get_current_user)],
+    report_payload: ReportRequestModel,
+):
+    report_id = report_payload.report_id
+    content = report_payload.content
+
+    await MongoDB(
+        database=current_user["user_code"],
+        collection_name=settings.REPORTS,
+        document={
+            "_id": await generate_uuid_id(),
+            "report_id": report_id,
+            "content": content,
+        },
+    ).write_entry()
+
+    return BaseResponseModel(message="Reported!")
