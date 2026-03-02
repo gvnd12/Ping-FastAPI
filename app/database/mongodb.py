@@ -12,30 +12,26 @@ mongo_client = AsyncMongoClient(
 
 
 class MongoDB:
+    collection_name: str = None
     def __init__(
         self,
-        database: str,
-        collection_name: str | None = None,
-        filter_param: dict | None = None,
-        document: dict | None = None,
+        database: str|None="",
     ):
         self.database = mongo_client[database]
-        self.collection_name = collection_name
-        self.filter_param = filter_param
-        self.document = document
+        self.collection = self.database[self.collection_name]
 
-    async def prepare_data(self):
+    async def get_collection(self, database: str, collection_name: str):
+        db = mongo_client[database]
+        return db[collection_name]
+
+    async def prepare_metadata(self, document: dict):
         return {
             "_id": generate_uuid_id(),
             "created_at": int(time()),
             "is_active": True,
             "is_deleted": False,
-            **self.document,
+            **document,
         }
-
-    async def create_user_identity(self):
-        data = await self.prepare_data()
-        await self.database[self.collection_name].insert_one(document=data)
 
     async def create_collection(self):
         await self.database.create_collection(name="chats")
@@ -50,44 +46,44 @@ class MongoDB:
         await mongo_client.drop_database(name_or_database=self.database)
         return self
 
-    async def read_entry(self) -> dict:
-        result = await self.database[self.collection_name].find_one(
-            filter=self.filter_param
+    async def read_entry(self,filter_param: dict | None = None,
+        projection: dict | None = None) -> dict:
+        result = await self.collection.find_one(
+            filter=filter_param,
+            projection=projection or {}
         )
         return result
 
-    async def read_many(self) -> list:
-        regex_filter = {
-            key: {"$regex": f"^{value}", "$options": "i"}
-            for key, value in self.filter_param.items()
-            if isinstance(value, str)
-        }
-        result = self.database[self.collection_name].find(filter=regex_filter)
-        results = []
-        async for record in result:
-            results.append(record)
+    async def read_many(self,filter_param: dict | None = None,
+        projection: dict | None = None) -> list:
+        # regex_filter = {
+        #     key: {"$regex": f"^{value}", "$options": "i"}
+        #     for key, value in filter_param.items()
+        #     if isinstance(value, str)
+        # }
+        results = await self.collection.find(filter=filter_param or {}, projection=projection or {}).to_list()
         return results
 
-    async def document_count(self):
-        result = await self.database[self.collection_name].count_documents(
-            filter=self.filter_param
+    async def document_count(self,filter_param: dict | None = None):
+        result = await self.collection.count_documents(
+            filter=filter_param
         )
         return result
 
-    async def write_entry(self):
-        result = await self.database[self.collection_name].insert_one(
-            document=self.document
+    async def write_entry(self,document: dict):
+        result = await self.collection.insert_one(
+            document=document
         )
         return result
 
-    async def edit_entry(self):
+    async def edit_entry(self, document: dict,filter_param: dict | None = None):
         result = await self.database[self.collection_name].find_one_and_update(
-            filter=self.filter_param, update=self.document
+            filter=filter_param, update=document
         )
         return result
 
-    async def delete_entry(self):
-        result = await self.database[self.collection_name].delete_one(
-            filter=self.filter_param
+    async def delete_entry(self,filter_param: dict | None = None):
+        result = await self.collection.delete_one(
+            filter=filter_param
         )
         return result

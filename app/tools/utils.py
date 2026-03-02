@@ -84,7 +84,7 @@ async def generate_user_code(name: str):
     return user_code
 
 
-async def generate_uuid_id():
+def generate_uuid_id():
     return str(uuid.uuid4().hex)
 
 

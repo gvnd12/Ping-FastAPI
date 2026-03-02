@@ -46,7 +46,7 @@ async def create_user(payload: CreateAccountRequest):
         "account_privacy": payload.account_privacy,
     }
 
-    result = await UserOP(document=user_details).create_user()
+    result = await UserOP().create_user(document=user_details)
 
     if result.get("error"):
         raise HTTPException(
