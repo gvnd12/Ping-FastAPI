@@ -1,22 +1,21 @@
+from app.schemas.common_schema import User
 from app.schemas.request_schema import (
-    LoginRequestModel,
-    CreateAccountRequest,
-    ChatModel,
-    UserSearch,
-    CommentRequestModel,
     ChangePasswordRequest,
-    ReportRequestModel,
+    ChatModel,
+    CommentRequestModel,
+    CreateAccountRequest,
+    LoginRequestModel,
     PostLikeRequestModel,
+    ReportRequestModel,
+    UserSearch,
 )
 from app.schemas.response_schema import (
-    LoginResponseModel,
     BaseResponseModel,
     CreateUserResponseModel,
-    SearchResponseModel,
+    LoginResponseModel,
     ProfileResponseModel,
+    SearchResponseModel,
 )
-from app.schemas.common_schema import User
-from app.models.identity_model import UserIdentity
 
 __all__ = [
     "User",
@@ -25,7 +24,6 @@ __all__ = [
     "CreateAccountRequest",
     "LoginResponseModel",
     "ChatModel",
-    "UserIdentity",
     "CreateUserResponseModel",
     "UserSearch",
     "SearchResponseModel",

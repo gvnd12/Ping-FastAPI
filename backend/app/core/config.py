@@ -3,6 +3,12 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    APP_NAME: str = "Ping"
+    DATABASE: str = "ping"
+
+    USER_TYPE: str = "USER"
+    ADMIN_TYPE: str = "ADMIN"
+
     # Super Admin
     SUPER_ADMIN_USERNAME: str = "superadmin"
     SUPER_ADMIN_PASSWORD: str = "Super@123"
@@ -17,9 +23,10 @@ class Settings(BaseSettings):
     # NEO4J_PASSWORD="Govindwork1@"
 
     # Mongo DB
-    MONGO_URL: str = "localhost:27017"
+    MONGO_URL: str = "localhost"
+    MONGO_PORT: int = 27017
     USER_IDENTITY: str = "user_identity"
-    USERS_LIST: str = "user_list"
+    USERS: str = "users"
     CHATS: str = "chats"
     PINGS: str = "pings"
     POSTS: str = "posts"

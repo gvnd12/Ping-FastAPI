@@ -1,16 +1,16 @@
 import base64
-import uuid
-from fastapi import UploadFile
-from passlib.context import CryptContext
-from random import Random
-from app.core.config import settings
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
-import aiosmtplib
-from fastapi import Request
-from fastapi.templating import Jinja2Templates
+from random import Random
+import uuid
 
+import aiosmtplib
+from fastapi import Request, UploadFile
+from fastapi.templating import Jinja2Templates
+from passlib.context import CryptContext
+
+from app.core.config import settings
 from app.tools.common_types import EmailType
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

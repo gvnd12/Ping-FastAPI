@@ -1,14 +1,17 @@
 from pydantic_settings import BaseSettings
 
+from app.core.config import settings
+
 
 class QueryClass(BaseSettings):
+    ENSURE_DB_QUERY: str = f"CREATE DATABASE `{settings.DATABASE}` IF NOT EXISTS"
+
     CREATE_USER_QUERY: str = """
     CREATE(u:User{
     id:$_id,
-    name:$name,
     username:$username
     })
-    RETURN u.username AS username
+    RETURN u.id AS id
     """
 
     CHECK_DUPLICATE: str = """
@@ -24,9 +27,9 @@ class QueryClass(BaseSettings):
     """
 
     DELETE_QUERY: str = """
-    MATCH (api:User)
-    WHERE api.user_id = $_id
-    SET api.is_deleted = true
+    MATCH (user:User)
+    WHERE user.id = $id
+    DELETE user
     """
 
     @staticmethod
@@ -41,7 +44,7 @@ class QueryClass(BaseSettings):
 
     SEARCH_QUERY: str = """
     MATCH (api:User)
-    WHERE toLower(api.username) STARTS WITH toLower($param) 
+    WHERE toLower(api.username) STARTS WITH toLower($param)
     OR toLower(api.name) STARTS WITH toLower($param)
     RETURN api
     """

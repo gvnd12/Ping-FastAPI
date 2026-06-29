@@ -1,4 +1,5 @@
 from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -13,9 +14,9 @@ class CreateAccountRequest(BaseModel):
     username: str
     password: str
     mobile_no: str
-    date_of_birth: int
-    gender: Literal["Male", "Female"]
-    account_privacy: Literal["Public", "Private"]
+    date_of_birth: str
+    gender: Literal["male", "female"]
+    account_privacy: Literal["public", "private"]
 
 
 class ChangePasswordRequest(BaseModel):
