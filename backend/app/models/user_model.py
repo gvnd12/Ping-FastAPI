@@ -1,12 +1,12 @@
 from time import time
 
 from app.core.config import settings
-from app.database import MongoDB, Neo4jDB
+from app.database import MinIO, MongoDB, Neo4jDB
 from app.query import queryclass
 from app.tools.utils import generate_uuid_id, password_hash, verify_password
 
 
-class UserOP(MongoDB, Neo4jDB):
+class UserOP(MongoDB, Neo4jDB, MinIO):
     def __init__(
         self,
     ):

@@ -8,11 +8,11 @@ class MongoDB:
         self,
     ):
         super().__init__()
-        self._client = AsyncMongoClient(
+        self._mongo_client = AsyncMongoClient(
             host=settings.MONGO_URL,
             port=settings.MONGO_PORT,
         )
-        self.database = self._client[settings.DATABASE]
+        self.database = self._mongo_client[settings.DATABASE]
         self.collection = None
 
     class Meta:
@@ -23,12 +23,11 @@ class MongoDB:
         return self
 
     async def ensure_database(self):
-        self.database = self._client.get_database(settings.DATABASE)
-        # await self._create_collections()
+        self.database = self._mongo_client.get_database(settings.DATABASE)
         return
 
     async def delete_db(self):
-        await self._client.drop_database(name_or_database=self.database)
+        await self._mongo_client.drop_database(name_or_database=self.database)
         return self
 
     async def read_entry(
@@ -50,10 +49,12 @@ class MongoDB:
         return results
 
     async def document_count(self, filter_param: dict | None = None):
+        await self._load_collection()
         result = await self.collection.count_documents(filter=filter_param)
         return result
 
     async def write_entry(self, document: dict):
+        await self._load_collection()
         result = await self.collection.insert_one(document=document)
         return result
 
@@ -72,5 +73,5 @@ class MongoDB:
         return result
 
     async def close(self):
-        await self._client.close()
+        await self._mongo_client.close()
         return

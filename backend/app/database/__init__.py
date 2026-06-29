@@ -1,6 +1,7 @@
 from app.query.graph_query import queryclass
 
 from .graph_db import Neo4jDB
+from .minio_storage import MinIO
 from .mongodb import MongoDB
 
 
@@ -19,4 +20,4 @@ async def close_databases():
     await mongo_client.close()
 
 
-__all__ = ["MongoDB", "Neo4jDB", "ensure_databases", "close_databases"]
+__all__ = ["MongoDB", "Neo4jDB", "ensure_databases", "close_databases", "MinIO"]
