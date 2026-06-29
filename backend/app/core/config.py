@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     FOLLOWING: str = "following"
     REPORTS: str = "reports"
 
+    # Minio
+    MINIO_URL: str = "localhost:9000"
+    MINIO_ACCESS_KEY: str = "minioadmin"
+    MINIO_SECRET_KEY: str = "minioadmin"
+    MINIO_POST_BUCKET_NAME: str = "pinguserposts"
+
     # Authentication
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 1  # 60 minutes * 24 hours * 1 = 1 day
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 30  # 30 day

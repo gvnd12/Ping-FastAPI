@@ -9,6 +9,7 @@ dependencies = [
     "async-pymongo>=0.1.11",
     "bcrypt==4.0.1",
     "fastapi[standard]>=0.115.12",
+    "minio>=7.2.20",
     "neo4j>=5.28.1",
     "passlib[bcrypt]>=1.7.4",
     "premailer>=3.10.0",
