@@ -21,7 +21,8 @@ class Neo4jDB:
         parameters: dict | None = None,
     ):
         async with self.graph_client.session() as session:
-            await session.run(query=query, parameters=parameters)
+            result = await session.run(query=query, parameters=parameters)
+            return result
 
     async def close(self):
         await self.graph_client.close()

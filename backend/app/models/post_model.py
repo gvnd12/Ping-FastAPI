@@ -2,6 +2,7 @@ from pathlib import Path
 from time import time
 
 from fastapi import UploadFile
+from pymongo import ASCENDING, DESCENDING
 
 from app.core.config import settings
 from app.database import MinIO, MongoDB
@@ -15,6 +16,16 @@ class Posts(MongoDB, MinIO):
     class Meta:
         collection_name = settings.POSTS
         bucket_name = settings.MINIO_POST_BUCKET_NAME
+        indexes = [
+            {
+                "keys": [("user_id", ASCENDING)],
+                "kwargs": {},
+            },
+            {
+                "keys": [("created_at", DESCENDING)],
+                "kwargs": {},
+            },
+        ]
 
     async def _prepare_metadata(self, document: dict):
         return {
@@ -44,6 +55,12 @@ class Posts(MongoDB, MinIO):
                 "caption": document.get("caption"),
             }
             upload_details = await self._prepare_metadata(document=post_metadata)
-            result = await self.write_entry(document=upload_details)
-            return result
+            _ = await self.write_entry(document=upload_details)
+            return {"message": "Post uploaded!"}
         return {"error": "Something went wrong!"}
+
+    async def post_like(self, post_id: str):
+        await self.edit_entry(
+            document={"$inc": {"likes_count": 1}}, filter_param={"_id": post_id}
+        )
+        return {"message": "Post liked!"}

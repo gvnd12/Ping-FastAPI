@@ -4,7 +4,7 @@ import logging
 from fastapi import FastAPI
 import uvicorn
 
-from app.api import admin_router, auth_route, user_route
+from app.api import admin_router, auth_route, post_route, user_route
 from app.core.config import settings
 from app.database import close_databases, ensure_databases
 
@@ -28,6 +28,7 @@ def create_app():
     app.include_router(router=auth_route)
     app.include_router(router=user_route)
     app.include_router(router=admin_router)
+    app.include_router(router=post_route)
     return app
 
 

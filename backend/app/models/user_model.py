@@ -1,4 +1,8 @@
-from time import time
+from datetime import UTC, datetime, time
+from time import time as create_time
+
+from pymongo import ASCENDING
+from pymongo.errors import DuplicateKeyError
 
 from app.core.config import settings
 from app.database import MinIO, MongoDB, Neo4jDB
@@ -14,12 +18,25 @@ class UserOP(MongoDB, Neo4jDB, MinIO):
 
     class Meta:
         collection_name = settings.USERS
+        indexes = [
+            {
+                "keys": [("email", ASCENDING)],
+                "kwargs": {"unique": True},
+            },
+            {
+                "keys": [("username", ASCENDING)],
+                "kwargs": {"unique": True},
+            },
+        ]
 
-    async def _prepare_metadata(self, document: dict):
+    def _prepare_user_metadata(self, document: dict) -> dict:
         return {
             "_id": generate_uuid_id(),
             **document,
-            "created_at": int(time()),
+            "posts_count": 0,
+            "followers_count": 0,
+            "following_count": 0,
+            "created_at": int(create_time()),
             "is_active": True,
             "is_deleted": False,
         }
@@ -30,14 +47,20 @@ class UserOP(MongoDB, Neo4jDB, MinIO):
         )
         if user:
             return {"error": "Username already exists!"}
-        data = await self._prepare_metadata(document)
+        dob_datetime = datetime.combine(document["date_of_birth"], time.min, tzinfo=UTC)
+        document = {**document, "date_of_birth": int(dob_datetime.timestamp())}
+        data = self._prepare_user_metadata(document)
         data["password"] = await password_hash(document["password"])
-        result = await self.write_entry(document=data)
-        if result:
-            await self.db_action(
-                query=queryclass.CREATE_USER_QUERY,
-                parameters={"_id": data.get("_id"), "username": data.get("username")},
-            )
+        try:
+            result = await self.write_entry(document=data)
+        except DuplicateKeyError:
+            return {"error": "Username or email already exists!"}
+        if not result:
+            return {"error": "Failed to create user, please try again."}
+        await self.db_action(
+            query=queryclass.CREATE_USER_QUERY,
+            parameters={"_id": data.get("_id"), "username": data.get("username")},
+        )
         return {"message": "User created successfully!"}
 
     async def edit_user(self, filter_params: dict, document: dict):
@@ -46,7 +69,7 @@ class UserOP(MongoDB, Neo4jDB, MinIO):
 
     async def soft_delete_user(self, user_id: str):
         mongo_result = await self.edit_entry(
-            filter_param={"_id": user_id}, document={"is_deleted": True}
+            filter_param={"_id": user_id}, document={"$set": {"is_deleted": True}}
         )
         _ = await self.db_action(
             parameters={"id": user_id}, query=queryclass.DELETE_QUERY
@@ -72,7 +95,7 @@ class UserOP(MongoDB, Neo4jDB, MinIO):
             new_password = await password_hash(password=new_password)
             _ = await self.edit_entry(
                 filter_param=filter_params,
-                document={"password": new_password},
+                document={"$set": {"password": new_password}},
             )
             return {"message": "Password changed successfully!"}
         return {"error": "Old password do not match!"}

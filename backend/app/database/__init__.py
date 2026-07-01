@@ -1,15 +1,22 @@
+import logging
+
+from app.core.config import settings
 from app.query.graph_query import queryclass
 
 from .graph_db import Neo4jDB
 from .minio_storage import MinIO
 from .mongodb import MongoDB
 
+logger = logging.getLogger(settings.APP_NAME)
+
 
 async def ensure_databases():
     mongo_client = MongoDB()
     graph_client = Neo4jDB()
-    await mongo_client.ensure_database()
+    mongo_database = await mongo_client.ensure_database()
+    logger.info(f"Mongo database '{mongo_database.name}' initialized successfully!")
     await graph_client.ensure_graph_database(query=queryclass.ENSURE_DB_QUERY)
+    logger.info("Neo4j database initialized successfully!")
     return
 
 

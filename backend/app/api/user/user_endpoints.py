@@ -1,10 +1,10 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.config import settings
-from app.models import Posts, UserOP
+from app.models import UserOP
 from app.schemas import (
     BaseResponseModel,
     ChangePasswordRequest,
@@ -202,34 +202,6 @@ async def change_password(
         )
 
 
-@user_route.post(path="/post", response_model=BaseResponseModel)
-async def upload_post(
-    current_user: Annotated[User, Depends(get_current_user)],
-    caption: str = Form(...),
-    post: UploadFile = File(...),
-):
-    try:
-        if current_user:
-            user_id = current_user.get("_id")
-            document = {
-                "user_id": user_id,
-                "caption": caption,
-            }
-
-            result = await Posts().create_post(document=document, file=post)
-
-            if result:
-                return BaseResponseModel(message="Post uploaded!")
-        else:
-            return BaseResponseModel(message="User not found!")
-    except Exception as e:
-        logger.error(f"Post upload request failed: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Something went wrong!",
-        )
-
-
 #
 # @user_route.get(
 #     path="/profile", response_model=ProfileResponseModel | BaseResponseModel
@@ -322,26 +294,6 @@ async def upload_post(
 #         raise HTTPException(status_code=401, detail="User not found!")
 #
 #     return SearchResponseModel(users=mongo_result)
-#
-#
-# @user_route.post(path="/like_post")
-# async def like_post(
-#     current_user: Annotated[User, Depends(get_current_user)],
-#     payload: PostLikeRequestModel,
-# ):
-#     user = await UserIdentity(username=payload["username"]).get_user_with_username()
-#
-#     register_like = await MongoDB(
-#         database=user["user_code"],
-#         collection_name=settings.POSTS,
-#         filter_param={"_id": payload["post_id"]},
-#         document={
-#             "$inc": {"like_count": 1},
-#             "$addToSet": {"liked_by": current_user["_id"]},
-#         },
-#     ).edit_entry()
-#
-#     return register_like
 #
 #
 # @user_route.post(path="/comment")

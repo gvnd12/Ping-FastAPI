@@ -38,7 +38,7 @@ class UserIdentity(MongoDB):
     async def reactivate_user(self, username: str):
         updated = await self.edit_entry(
             filter_param={"username": username},
-            document={"is_active": True},
+            document={"$set": {"is_active": True}},
         )
         return updated
 

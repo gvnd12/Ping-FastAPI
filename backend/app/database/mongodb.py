@@ -17,14 +17,31 @@ class MongoDB:
 
     class Meta:
         collection_name: str
+        indexes: list[dict]
+
+    async def _check_collection_exists(self):
+        collections = await self.database.list_collection_names()
+        if self.Meta.collection_name in collections:
+            self.collection = self.database[self.Meta.collection_name]
+            return True
+        return False
+
+    async def _create_collection(self):
+        self.collection = await self.database.create_collection(
+            name=self.Meta.collection_name
+        )
+        for index in self.Meta.indexes:
+            await self.collection.create_index(index["keys"], **index.get("kwargs", {}))
 
     async def _load_collection(self):
-        self.collection = self.database[self.Meta.collection_name]
+        if await self._check_collection_exists():
+            return self
+        await self._create_collection()
         return self
 
     async def ensure_database(self):
         self.database = self._mongo_client.get_database(settings.DATABASE)
-        return
+        return self.database
 
     async def delete_db(self):
         await self._mongo_client.drop_database(name_or_database=self.database)
@@ -62,7 +79,7 @@ class MongoDB:
         await self._load_collection()
         result = await self.collection.find_one_and_update(
             filter=filter_param,
-            update={"$set": document},
+            update=document,
             return_document=ReturnDocument.AFTER,
         )
         return result
