@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -9,7 +10,7 @@ class User(BaseModel):
     username: str
     email: str
     mobile_no: str
-    date_of_birth: str
+    date_of_birth: date
     gender: str
     account_privacy: Literal["public", "private"]
     created_at: int

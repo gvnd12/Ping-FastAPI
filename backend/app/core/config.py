@@ -38,15 +38,20 @@ class Settings(BaseSettings):
     # Mongo DB
     MONGO_URL: str = ""
     MONGO_PORT: int = 27017
-    USER_IDENTITY: str = "user_identity"
     USERS: str = "users"
     CHATS: str = "chats"
     PINGS: str = "pings"
     POSTS: str = "posts"
-    REACTIONS: str = "reactions"
+    POST_COMMENTS: str = "post_comments"
+    LIKES: str = "likes"
     FOLLOWERS: str = "followers"
     FOLLOWING: str = "following"
     REPORTS: str = "reports"
+
+    # Redis
+    REDIS_HOST: str = ""
+    REDIS_PORT: int = 6379
+    REDIS_DB: str = "ping"
 
     # Minio
     MINIO_URL: str = ""

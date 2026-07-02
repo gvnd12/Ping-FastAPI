@@ -58,9 +58,3 @@ class Posts(MongoDB, MinIO):
             _ = await self.write_entry(document=upload_details)
             return {"message": "Post uploaded!"}
         return {"error": "Something went wrong!"}
-
-    async def post_like(self, post_id: str):
-        await self.edit_entry(
-            document={"$inc": {"likes_count": 1}}, filter_param={"_id": post_id}
-        )
-        return {"message": "Post liked!"}
