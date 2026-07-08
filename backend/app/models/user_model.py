@@ -41,6 +41,9 @@ class UserOP(MongoDB, Neo4jDB, MinIO):
             "is_deleted": False,
         }
 
+    async def get_user(self, user_id: str):
+        return await self.read_entry(filter_param={"_id": user_id})
+
     async def create_user(self, document: dict):
         user = await self.read_entry(
             filter_param={"username": document.get("username")}
@@ -64,7 +67,9 @@ class UserOP(MongoDB, Neo4jDB, MinIO):
         return {"message": "User created successfully!"}
 
     async def edit_user(self, filter_params: dict, document: dict):
-        _ = await self.edit_entry(document=document, filter_param=filter_params)
+        _ = await self.edit_entry(
+            document={"$set": document}, filter_param=filter_params
+        )
         return {"message": "User updated successfully!"}
 
     async def soft_delete_user(self, user_id: str):

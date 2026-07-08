@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class BaseResponseModel(BaseModel):
@@ -17,13 +17,37 @@ class SearchResponseModel(BaseModel):
     users: list[dict]
 
 
-class ProfileResponseModel(BaseModel):
-    posts: list[dict]
-    post_count: int
+class BasePostResponseModel(BaseModel):
+    id: str = Field(alias="_id")
+    user_id: str
+    caption: str
+    likes_count: int
+    comments_count: int
+    created_at: int
+
+
+class BaseUserProfileResponseModel(BaseModel):
+    id: str = Field(alias="_id")
+    name: str
+    username: str
+    posts_count: int
     followers_count: int
     following_count: int
-    is_following: bool
-    current_user_profile: bool
 
 
-# class FeedResponseModel(BaseModel):
+class ProfileResponseModel(BaseModel):
+    user: BaseUserProfileResponseModel
+    posts: list[BasePostResponseModel]
+
+
+class CommentResponseModel(BaseModel):
+    id: str = Field(alias="_id")
+    post_id: str
+    comment: str
+    user: dict
+    created_at: int
+
+
+class LikeResponseModel(BaseModel):
+    message: str
+    like: bool

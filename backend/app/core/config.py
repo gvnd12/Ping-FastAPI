@@ -36,14 +36,13 @@ class Settings(BaseSettings):
     DEFAULT_EMAIL_FROM: str = ""
 
     # Mongo DB
-    MONGO_URL: str = ""
-    MONGO_PORT: int = 27017
+    MONGO_URI: str = ""
     USERS: str = "users"
     CHATS: str = "chats"
     PINGS: str = "pings"
     POSTS: str = "posts"
     POST_COMMENTS: str = "post_comments"
-    LIKES: str = "likes"
+    POST_LIKES: str = "post_likes"
     FOLLOWERS: str = "followers"
     FOLLOWING: str = "following"
     REPORTS: str = "reports"

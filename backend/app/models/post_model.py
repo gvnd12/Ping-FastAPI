@@ -38,6 +38,9 @@ class Posts(MongoDB, MinIO):
             "is_deleted": False,
         }
 
+    async def get_posts(self, user_id: str):
+        return await self.read_many(filter_param={"user_id": user_id})
+
     async def create_post(self, document: dict, file: UploadFile):
         file_id = generate_uuid_id()
         extension = Path(file.filename).suffix

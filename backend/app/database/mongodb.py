@@ -1,3 +1,4 @@
+from async_pymongo.client_session import AsyncClientSession
 from pymongo import AsyncMongoClient, ReturnDocument
 
 from app.core.config import settings
@@ -8,10 +9,7 @@ class MongoDB:
         self,
     ):
         super().__init__()
-        self._mongo_client = AsyncMongoClient(
-            host=settings.MONGO_URL,
-            port=settings.MONGO_PORT,
-        )
+        self._mongo_client = AsyncMongoClient(settings.MONGO_URI)
         self.database = self._mongo_client[settings.DATABASE]
         self.collection = None
 
@@ -70,23 +68,35 @@ class MongoDB:
         result = await self.collection.count_documents(filter=filter_param)
         return result
 
-    async def write_entry(self, document: dict):
+    async def write_entry(
+        self, document: dict, session: AsyncClientSession | None = None
+    ):
         await self._load_collection()
-        result = await self.collection.insert_one(document=document)
+        result = await self.collection.insert_one(document=document, session=session)
         return result
 
-    async def edit_entry(self, document: dict, filter_param: dict | None = None):
+    async def edit_entry(
+        self,
+        document: dict,
+        filter_param: dict | None = None,
+        session: AsyncClientSession | None = None,
+    ):
         await self._load_collection()
         result = await self.collection.find_one_and_update(
             filter=filter_param,
             update=document,
             return_document=ReturnDocument.AFTER,
+            session=session,
         )
         return result
 
-    async def delete_entry(self, filter_param: dict | None = None):
+    async def delete_entry(
+        self,
+        filter_param: dict | None = None,
+        session: AsyncClientSession | None = None,
+    ):
         await self._load_collection()
-        result = await self.collection.delete_one(filter=filter_param)
+        result = await self.collection.delete_one(filter=filter_param, session=session)
         return result
 
     async def close(self):
