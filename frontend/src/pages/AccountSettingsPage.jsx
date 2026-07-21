@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import PageTransition from "../components/PageTransition.jsx";
-import PageHeader from "../components/PageHeader.jsx";
 import Card from "../components/ui/Card.jsx";
 import Input from "../components/ui/Input.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -10,6 +9,7 @@ import { useToast } from "../components/ui/Toast.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { userApi } from "../api/endpoints.js";
 import { extractError } from "../api/client.js";
+import CustomSelect from "../components/ui/CustomSelect.jsx";
 
 const TABS = [
   { id: "profile", label: "Edit profile" },
@@ -17,24 +17,20 @@ const TABS = [
   { id: "danger", label: "Danger zone" },
 ];
 
-function ProfileSummary({ user }) {
-  if (!user) return null;
-  return (
-    <div className="mb-5 rounded-xl border border-white/10 bg-white/5 p-4">
-      <div className="font-semibold text-slate-100">{user.name}</div>
-      <div className="text-sm text-slate-400">@{user.username}</div>
-      <div className="mt-3 flex gap-6 text-sm text-slate-400">
-        <span>{user.posts_count ?? 0} posts</span>
-        <span>{user.followers_count ?? 0} followers</span>
-        <span>{user.following_count ?? 0} following</span>
-      </div>
-    </div>
-  );
-}
+const privacyOptions = [
+  {
+    value: "public",
+    label: "Public",
+  },
+  {
+    value: "private",
+    label: "Private",
+  },
+];
 
-function EditProfile({ profileUser }) {
+function EditProfile({ user }) {
   const [form, setForm] = useState({
-    name: profileUser?.name ?? "",
+    name: "",
     email: "",
     mobile_no: "",
     account_privacy: "",
@@ -43,10 +39,14 @@ function EditProfile({ profileUser }) {
   const toast = useToast();
 
   useEffect(() => {
-    if (profileUser?.name) {
-      setForm((f) => ({ ...f, name: profileUser.name }));
-    }
-  }, [profileUser?.name]);
+    if (!user) return;
+    setForm({
+      name: user.name ?? "",
+      email: user.email ?? "",
+      mobile_no: user.mobile_no ?? "",
+      account_privacy: user.account_privacy ?? "",
+    });
+  }, [user]);
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -86,17 +86,18 @@ function EditProfile({ profileUser }) {
         value={form.mobile_no}
         onChange={update("mobile_no")}
       />
-      <Input
-        as="select"
-        label="Account privacy"
+      <CustomSelect
+          label="Account Privacy"
         value={form.account_privacy}
-        onChange={update("account_privacy")}
-      >
-        <option value="">No change</option>
-        <option value="public">Public</option>
-        <option value="private">Private</option>
-      </Input>
-      <Button type="submit" loading={loading} className="w-full">
+        onValueChange={(value) =>
+          setForm((prev) => ({
+            ...prev,
+            account_privacy: value,
+          }))
+        }
+        options={privacyOptions}
+      />
+      <Button type="submit" loading={loading} className="w-full cursor-pointer">
         Save changes
       </Button>
     </form>
@@ -216,17 +217,14 @@ function DangerZone() {
           variant="ghost"
           loading={deactivating}
           onClick={handleDeactivate}
-          className="mt-3"
+          className="mt-3 cursor-pointer"
         >
           Deactivate
         </Button>
       </div>
       <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-4">
         <h3 className="text-sm font-semibold text-rose-100">Delete account</h3>
-        <p className="mt-1 text-xs text-rose-100/70">
-          Remove your account from Ping. This performs a soft delete on the server.
-        </p>
-        <Button variant="danger" loading={deleting} onClick={handleDelete} className="mt-3">
+        <Button variant="danger" loading={deleting} onClick={handleDelete} className="mt-3 cursor-pointer">
           Delete my account
         </Button>
       </div>
@@ -236,21 +234,19 @@ function DangerZone() {
 
 export default function AccountSettingsPage() {
   const [tab, setTab] = useState("profile");
-  const [profileUser, setProfileUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const toast = useToast();
 
   useEffect(() => {
     userApi
-      .getProfile()
-      .then(({ data }) => setProfileUser(data.user ?? null))
-      .catch((err) => toast.error(extractError(err, "Could not load profile.")));
+      .whoami()
+      .then(({ data }) => setCurrentUser(data ?? null))
+      .catch((err) => toast.error(extractError(err, "Could not load account details.")));
   }, [toast]);
 
   return (
     <PageTransition>
-      <PageHeader title="Account settings" description="Manage your Ping account." />
       <div className="mx-auto max-w-xl">
-        <ProfileSummary user={profileUser} />
         <div className="mb-5 flex gap-1 rounded-xl bg-white/5 p-1">
           {TABS.map((t) => (
             <button
@@ -280,7 +276,7 @@ export default function AccountSettingsPage() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {tab === "profile" && <EditProfile profileUser={profileUser} />}
+              {tab === "profile" && <EditProfile user={currentUser} />}
               {tab === "password" && <ChangePassword />}
               {tab === "danger" && <DangerZone />}
             </motion.div>

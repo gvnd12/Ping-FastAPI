@@ -3,13 +3,33 @@ from pymongo import AsyncMongoClient, ReturnDocument
 
 from app.core.config import settings
 
+_mongo_client: AsyncMongoClient | None = None
+
+
+def init_mongo_client() -> AsyncMongoClient:
+    global _mongo_client
+    if _mongo_client is None:
+        _mongo_client = AsyncMongoClient(settings.MONGO_URI)
+    return _mongo_client
+
+
+def get_mongo_client() -> AsyncMongoClient:
+    return init_mongo_client()
+
+
+async def close_mongo_client():
+    global _mongo_client
+    if _mongo_client is not None:
+        await _mongo_client.close()
+        _mongo_client = None
+
 
 class MongoDB:
     def __init__(
         self,
     ):
         super().__init__()
-        self._mongo_client = AsyncMongoClient(settings.MONGO_URI)
+        self._mongo_client = get_mongo_client()
         self.database = self._mongo_client[settings.DATABASE]
         self.collection = None
 

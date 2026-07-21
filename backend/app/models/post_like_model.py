@@ -17,8 +17,15 @@ class Likes(MongoDB):
         collection_name = settings.POST_LIKES
         indexes = [
             {
-                "keys": [("user_id", ASCENDING)],
+                "keys": [
+                    ("user_id", ASCENDING),
+                    ("post_id", ASCENDING),
+                ],
                 "kwargs": {"unique": True},
+            },
+            {
+                "keys": [("post_id", ASCENDING)],
+                "kwargs": {},
             },
         ]
 
@@ -47,6 +54,7 @@ class Likes(MongoDB):
                         },
                         session=mongo_session,
                     )
+                    await mongo_session.commit_transaction()
                     return {"message": "Post liked!", "like": True}
             except DuplicateKeyError:
                 try:
@@ -54,9 +62,11 @@ class Likes(MongoDB):
                         await Posts().edit_entry(
                             document={"$inc": {"likes_count": -1}},
                             filter_param={"_id": post_id},
+                            session=mongo_session,
                         )
                         await self.delete_entry(
-                            filter_param={"post_id": post_id, "user_id": user_id}
+                            filter_param={"post_id": post_id, "user_id": user_id},
+                            session=mongo_session,
                         )
                         return {"message": "Post unliked!", "like": False}
                 except Exception:

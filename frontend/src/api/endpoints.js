@@ -25,6 +25,7 @@ export const userApi = {
       params: { post_id: postId, comment },
     }),
   getProfile: () => client.get("/api/user/profile"),
+  whoami: () => client.get("/api/whoami/whoami"),
   getComments: (postId) =>
     client.get("/api/user/comments", { params: { post_id: postId } }),
   deletePost: (postId) =>

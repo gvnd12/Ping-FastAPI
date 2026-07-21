@@ -20,8 +20,8 @@
   body {
     margin: 0;
     background:
-      radial-gradient(1200px 800px at 15% -10%, rgba(99, 102, 241, 0.18), transparent 55%),
-      radial-gradient(1000px 700px at 110% 10%, rgba(34, 211, 238, 0.12), transparent 50%),
+      radial-gradient(1200px 800px at 15% -10%,rgba(21, 24, 49, 0.18), transparent 55%),
+      radial-gradient(1000px 700px at 110% 10%, rgba(21, 24, 49, 0.18), transparent 50%),
       var(--color-ink);
     color: #e5e7eb;
     font-family: var(--font-sans);

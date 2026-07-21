@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import PageTransition from "../components/PageTransition.jsx";
-import PageHeader from "../components/PageHeader.jsx";
 import Card from "../components/ui/Card.jsx";
 import Input from "../components/ui/Input.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -10,6 +9,7 @@ import Spinner from "../components/ui/Spinner.jsx";
 import { useToast } from "../components/ui/Toast.jsx";
 import { userApi } from "../api/endpoints.js";
 import { extractError } from "../api/client.js";
+import { Heart, MessageSquare, SendHorizontalIcon, Trash } from "lucide-react";
 
 function formatDate(ts) {
   if (!ts) return "";
@@ -17,8 +17,6 @@ function formatDate(ts) {
     year: "numeric",
     month: "short",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -34,7 +32,6 @@ function Stat({ label, value }) {
 function PostCard({ post, onDelete, onUpdate }) {
   const [comment, setComment] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
-  const [likeLoading, setLikeLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
@@ -43,21 +40,28 @@ function PostCard({ post, onDelete, onUpdate }) {
   const toast = useToast();
 
   const postId = post._id;
-
+  const [liked, setLiked] = useState(post.liked ?? false);
   const handleLike = async () => {
-    setLikeLoading(true);
+    const previousLiked = liked;
+
+    setLiked(!liked);
+
+    onUpdate(postId, {
+      likes_count: post.likes_count + (liked ? -1 : 1),
+    });
+
     try {
       const { data } = await userApi.like(postId);
-      toast.success(data?.message || "Done");
-      if (typeof data?.like === "boolean") {
-        onUpdate(postId, {
-          likes_count: post.likes_count + (data.like ? 1 : -1),
-        });
-      }
+
+      setLiked(data.like);
     } catch (err) {
-      toast.error(extractError(err, "Could not like post."));
-    } finally {
-      setLikeLoading(false);
+      setLiked(previousLiked);
+
+      onUpdate(postId, {
+        likes_count: post.likes_count,
+      });
+
+      toast.error(extractError(err, "Could not update like."));
     }
   };
 
@@ -113,19 +117,45 @@ function PostCard({ post, onDelete, onUpdate }) {
     }
   };
 
-  const copyId = async () => {
-    try {
-      await navigator.clipboard.writeText(postId);
-      toast.info("Post ID copied.");
-    } catch {
-      toast.error("Could not copy ID.");
-    }
-  };
-
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex aspect-video items-center justify-center rounded-xl bg-white/5 text-slate-500">
-        <span className="text-sm">Image preview unavailable</span>
+        <img
+          src={post.file_url}
+          alt="Post"
+          className="h-full w-full rounded-xl object-cover"
+        />
+      </div>
+      <div className="flex flex-wrap">
+        <Button
+          variant=""
+          onClick={handleLike}
+          className="flex items-center"
+        >
+          <Heart
+          size={20}
+          fill={liked ? "#fff" : "none"}
+          color={liked ? "#fff" : "#fff"}
+        />
+          <span>{post.likes_count ?? 0}</span>
+        </Button>
+        <Button variant="" onClick={toggleComments} className="px-3 py-1">
+          {showComments ?
+              <MessageSquare
+          size={20}
+        /> : <MessageSquare
+          size={20}
+        />}
+          <span>{post.comments_count ?? 0}</span>
+        </Button>
+        <Button
+          variant="danger"
+          loading={deleteLoading}
+          onClick={handleDelete}
+          className="ml-auto px-3 py-1.5 cursor-pointer"
+        >
+          <Trash size={15} />
+        </Button>
       </div>
 
       <div>
@@ -133,48 +163,25 @@ function PostCard({ post, onDelete, onUpdate }) {
         <p className="mt-1 text-xs text-slate-500">{formatDate(post.created_at)}</p>
       </div>
 
-      <div className="flex items-center gap-4 text-sm text-slate-400">
-        <span>{post.likes_count ?? 0} likes</span>
-        <span>{post.comments_count ?? 0} comments</span>
-        <button
-          type="button"
-          onClick={copyId}
-          className="ml-auto font-mono text-[10px] text-slate-600 hover:text-slate-400"
-          title="Copy post ID"
-        >
-          {postId.slice(0, 8)}…
-        </button>
-      </div>
+      <form onSubmit={handleComment}>
+        <div className="flex gap-2">
+          <Input
+            as="textarea"
+            rows={1}
+            placeholder="Write a comment..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            className="flex-1 resize-none"
+          />
 
-      <div className="flex flex-wrap gap-2">
-        <Button variant="ghost" loading={likeLoading} onClick={handleLike} className="px-3 py-1.5">
-          Like
-        </Button>
-        <Button variant="ghost" onClick={toggleComments} className="px-3 py-1.5">
-          {showComments ? "Hide comments" : "View comments"}
-        </Button>
-        <Button
-          variant="danger"
-          loading={deleteLoading}
-          onClick={handleDelete}
-          className="ml-auto px-3 py-1.5"
-        >
-          Delete
-        </Button>
-      </div>
-
-      <form onSubmit={handleComment} className="flex flex-col gap-2">
-        <Input
-          as="textarea"
-          label="Add a comment"
-          rows={2}
-          placeholder="Write a comment..."
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-        <Button type="submit" loading={commentLoading} className="w-full sm:w-auto">
-          Comment
-        </Button>
+          <Button
+            type="submit"
+            loading={commentLoading}
+            className="self-end cursor-pointer"
+          >
+            <SendHorizontalIcon size={20} />
+          </Button>
+        </div>
       </form>
 
       <AnimatePresence>
@@ -248,11 +255,6 @@ export default function ProfilePage() {
 
   return (
     <PageTransition>
-      <PageHeader
-        title="Your profile"
-        description="View your posts, like, comment, and manage your content."
-      />
-
       {loading ? (
         <div className="flex items-center justify-center gap-3 py-20 text-slate-400">
           <Spinner /> Loading profile...

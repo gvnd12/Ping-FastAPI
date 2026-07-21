@@ -39,7 +39,11 @@ class Posts(MongoDB, MinIO):
         }
 
     async def get_posts(self, user_id: str):
-        return await self.read_many(filter_param={"user_id": user_id})
+        posts = await self.read_many(filter_param={"user_id": user_id})
+        for post in posts:
+            file_url = await self.fetch_file(file_name=post.get("filename"))
+            post["file_url"] = file_url
+        return posts
 
     async def create_post(self, document: dict, file: UploadFile):
         file_id = generate_uuid_id()
@@ -49,8 +53,13 @@ class Posts(MongoDB, MinIO):
             "filename": filename,
             "user_id": document.get("user_id"),
         }
-        file = await file.read()
-        result = await self.insert_file(metadata=blob_metadata, file=file)
+        file = file.file
+        result = await self.insert_file(
+            metadata=blob_metadata, file=file, extension=extension
+        )
+        # result = await self.insert_file(
+        #     metadata=blob_metadata, file=file, type=PostType.IMAGE
+        # )
         if result:
             post_metadata = {
                 "filename": filename,

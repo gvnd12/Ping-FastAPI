@@ -1,12 +1,12 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
+import { LogOut, ImagePlusIcon } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "./ui/Toast.jsx";
 import Button from "./ui/Button.jsx";
 
 const USER_LINKS = [
-  { to: "/app/create", label: "Create" },
-  { to: "/app/profile", label: "Profile" },
+  { to: "/app/create", label: <ImagePlusIcon size={15}></ImagePlusIcon> },
   { to: "/app/settings", label: "Settings" },
 ];
 
@@ -17,6 +17,7 @@ export default function Navbar() {
   const toast = useToast();
   const navigate = useNavigate();
   const links = isAdmin ? ADMIN_LINKS : USER_LINKS;
+  const profilePath = isAdmin ? "/admin/users" : "/app/profile";
 
   const handleLogout = async () => {
     await logout();
@@ -25,9 +26,9 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-ink/60 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
+    <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-white/10 bg-ink/60 backdrop-blur-xl">
+      <div className="flex flex-col gap-6 p-4">
+        <div className="flex items-center gap-2 px-2">
           <motion.div
             initial={{ rotate: -12, scale: 0.8 }}
             animate={{ rotate: 0, scale: 1 }}
@@ -38,20 +39,22 @@ export default function Navbar() {
           </motion.div>
           <span className="text-lg font-bold tracking-tight">Ping</span>
           {isAdmin && (
-            <span className="ml-1 rounded-md bg-brand/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-2">
+            <span className="rounded-md bg-brand/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-2">
               Admin
             </span>
           )}
         </div>
 
-        <nav className="hidden items-center gap-1 sm:flex">
+        <nav className="flex flex-col gap-1">
           {links.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               className={({ isActive }) =>
-                `relative rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                  isActive ? "text-white" : "text-slate-400 hover:text-slate-200"
+                `relative rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-white/10 text-white"
+                    : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
                 }`
               }
             >
@@ -60,8 +63,8 @@ export default function Navbar() {
                   {link.label}
                   {isActive && (
                     <motion.span
-                      layoutId="nav-underline"
-                      className="absolute inset-x-2 -bottom-0.5 h-0.5 rounded-full bg-gradient-to-r from-brand to-accent"
+                      layoutId="nav-indicator"
+                      className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-gradient-to-b from-brand to-accent"
                     />
                   )}
                 </>
@@ -69,18 +72,28 @@ export default function Navbar() {
             </NavLink>
           ))}
         </nav>
-
-        <div className="flex items-center gap-3">
-          {username && (
-            <span className="hidden text-sm text-slate-400 sm:inline">
-              @{username}
-            </span>
-          )}
-          <Button variant="ghost" onClick={handleLogout} className="px-3 py-1.5">
-            Logout
-          </Button>
-        </div>
       </div>
-    </header>
+
+      <div className="mt-auto flex flex-col gap-3 border-t border-white/10 p-4">
+        {username && (
+          <NavLink
+            to={profilePath}
+            className={({ isActive }) =>
+              `rounded-lg px-3 py-2 text-sm transition-colors ${
+                isActive
+                  ? "bg-white/10 font-medium text-white"
+                  : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+              }`
+            }
+          >
+            {username}
+          </NavLink>
+        )}
+        <Button variant="primary" onClick={handleLogout} className="w-full px-3 py-2">
+          <LogOut size={18} />
+          Logout
+        </Button>
+      </div>
+    </aside>
   );
 }

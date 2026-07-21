@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import PageTransition from "../components/PageTransition.jsx";
-import PageHeader from "../components/PageHeader.jsx";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
@@ -74,11 +73,6 @@ export default function AdminUsersPage() {
 
   return (
     <PageTransition>
-      <PageHeader
-        title="Users"
-        description="All registered users. Restore soft-deleted accounts with Undelete."
-      />
-
       <div className="mb-4 flex items-center gap-3">
         <input
           value={search}

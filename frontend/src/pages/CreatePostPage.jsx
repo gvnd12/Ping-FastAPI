@@ -2,7 +2,6 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import PageTransition from "../components/PageTransition.jsx";
-import PageHeader from "../components/PageHeader.jsx";
 import Card from "../components/ui/Card.jsx";
 import Input from "../components/ui/Input.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -53,10 +52,6 @@ export default function CreatePostPage() {
 
   return (
     <PageTransition>
-      <PageHeader
-        title="Create a post"
-        description="Upload an image with a caption."
-      />
       <div className="mx-auto max-w-xl">
         <Card>
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -108,12 +103,10 @@ export default function CreatePostPage() {
 
             <Input
               as="textarea"
-              label="Caption"
               rows={3}
-              placeholder="Say something about your post..."
+              placeholder="Add a caption . . ."
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              required
             />
 
             <Button type="submit" loading={loading} className="w-full">

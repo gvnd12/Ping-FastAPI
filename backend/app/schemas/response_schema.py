@@ -21,6 +21,7 @@ class BasePostResponseModel(BaseModel):
     id: str = Field(alias="_id")
     user_id: str
     caption: str
+    file_url: str
     likes_count: int
     comments_count: int
     created_at: int
