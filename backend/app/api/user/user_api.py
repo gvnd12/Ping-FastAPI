@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.config import settings
 from app.models import Posts, UserOP
@@ -9,6 +9,7 @@ from app.schemas import (
     BaseResponseModel,
     ChangePasswordRequest,
     CreateAccountRequest,
+    ProfileResponseModel,
     User,
 )
 from app.tools.deps import get_current_user
@@ -202,102 +203,46 @@ async def change_password(
         )
 
 
-@user_route.post(path="/post", response_model=BaseResponseModel)
-async def upload_post(
+@user_route.get(
+    path="/profile", response_model=BaseResponseModel | ProfileResponseModel
+)
+async def user_profile(
     current_user: Annotated[User, Depends(get_current_user)],
-    caption: str = Form(...),
-    post: UploadFile = File(...),
 ):
     try:
         if current_user:
             user_id = current_user.get("_id")
-            document = {
-                "user_id": user_id,
-                "caption": caption,
-            }
-
-            result = await Posts().create_post(document=document, file=post)
-
-            if result:
-                return BaseResponseModel(message="Post uploaded!")
-        else:
-            return BaseResponseModel(message="User not found!")
+            profile = await UserOP().get_user(user_id=user_id)
+            user_posts = await Posts().get_posts(user_id=user_id)
+            return ProfileResponseModel(user=profile, posts=user_posts)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found!",
+        )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Post upload request failed: {str(e)}")
+        logger.error(f"Profile view request failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Something went wrong!",
         )
 
 
-#
-# @user_route.get(
-#     path="/profile", response_model=ProfileResponseModel | BaseResponseModel
-# )
-# async def user_profile(
-#     current_user: Annotated[User, Depends(get_current_user)],
-#     username: str | None = None,
-# ):
-#     if username is None:
-#         username = current_user["username"]
-#         user_code = current_user["user_code"]
-#         user_id = current_user["_id"]
-#     else:
-#         user = await UserIdentity(username=username).get_user_with_username()
-#         if user:
-#             user_code = user["user_code"]
-#             user_id = user["_id"]
-#         else:
-#             return BaseResponseModel(message="User does not exist!")
-#
-#     is_following = False
-#     current_user_profile = True
-#
-#     if user_code != current_user["user_code"]:
-#         current_user_profile = False
-#         following_check = await MongoDB(
-#             database=current_user["user_code"],
-#             collection_name=settings.FOLLOWING,
-#             filter_param={"_id": user_id, "is_deleted": False, "is_active": True},
-#         ).read_entry()
-#         if following_check:
-#             is_following = True
-#
-#     user_posts = await MongoDB(
-#         database=user_code,
-#         collection_name=settings.POSTS,
-#         filter_param={
-#             "is_deleted": False,
-#         },
-#     ).read_many()
-#
-#     post_count = await MongoDB(
-#         database=user_code,
-#         collection_name=settings.POSTS,
-#         filter_param={"is_deleted": False},
-#     ).document_count()
-#
-#     followers_count = await MongoDB(
-#         database=user_code,
-#         collection_name=settings.FOLLOWERS,
-#         filter_param={"is_deleted": False, "is_active": True},
-#     ).document_count()
-#
-#     following_count = await MongoDB(
-#         database=user_code,
-#         collection_name=settings.FOLLOWING,
-#         filter_param={"is_deleted": False, "is_active": True},
-#     ).document_count()
-#
-#     return ProfileResponseModel(
-#         posts=user_posts,
-#         post_count=post_count,
-#         followers_count=followers_count,
-#         following_count=following_count,
-#         is_following=is_following,
-#         current_user_profile=current_user_profile,
-#     )
-#
+@user_route.patch(path="/delete_post", response_model=BaseResponseModel)
+async def delete_post(
+    current_user: Annotated[User, Depends(get_current_user)], post_id: str
+):
+    result = await Posts().edit_entry(
+        filter_param={"_id": post_id, "is_deleted": False},
+        document={"$set": {"is_deleted": True}},
+    )
+
+    if result:
+        return BaseResponseModel(message="Post successfully deleted!")
+    return BaseResponseModel(message="Something went wrong!")
+
+
 #
 # @user_route.post(path="/search", response_model=SearchResponseModel)
 # async def user_search(
@@ -322,68 +267,6 @@ async def upload_post(
 #         raise HTTPException(status_code=401, detail="User not found!")
 #
 #     return SearchResponseModel(users=mongo_result)
-#
-#
-# @user_route.post(path="/like_post")
-# async def like_post(
-#     current_user: Annotated[User, Depends(get_current_user)],
-#     payload: PostLikeRequestModel,
-# ):
-#     user = await UserIdentity(username=payload["username"]).get_user_with_username()
-#
-#     register_like = await MongoDB(
-#         database=user["user_code"],
-#         collection_name=settings.POSTS,
-#         filter_param={"_id": payload["post_id"]},
-#         document={
-#             "$inc": {"like_count": 1},
-#             "$addToSet": {"liked_by": current_user["_id"]},
-#         },
-#     ).edit_entry()
-#
-#     return register_like
-#
-#
-# @user_route.post(path="/comment")
-# async def user_comment(
-#     current_user: Annotated[User, Depends(get_current_user)],
-#     payload: CommentRequestModel,
-# ):
-#     user = await UserIdentity(username=payload.username).get_user_with_username()
-#
-#     comment_doc = {
-#         "username": current_user["username"],
-#         "comment": payload.comment,
-#         "created_at": datetime.now(UTC),
-#     }
-#
-#     post_comment = await MongoDB(
-#         database=user["user_code"],
-#         collection_name=settings.POSTS,
-#         filter_param={"_id": payload.post_id},
-#         document={"$inc": {"comment_count": 1}, "$addToSet": {"comments": comment_doc}},
-#     ).edit_entry()
-#
-#     return {"message": "Comment registered!"}
-#
-#
-# @user_route.delete(path="/delete_post", response_model=BaseResponseModel)
-# async def delete_post(
-#     current_user: Annotated[User, Depends(get_current_user)], post_id: str
-# ):
-#     database = current_user["user_code"]
-#
-#     result = await MongoDB(
-#         database=database,
-#         collection_name=settings.POSTS,
-#         filter_param={"_id": post_id, "is_deleted": False},
-#         document={"$set": {"is_deleted": True}},
-#     ).edit_entry()
-#
-#     if result:
-#         return BaseResponseModel(message="Post successfully deleted!")
-#     else:
-#         return BaseResponseModel(message="Something went wrong!")
 #
 #
 # @user_route.post(path="/follow", response_model=BaseResponseModel)

@@ -1,8 +1,18 @@
-from pydantic import SecretStr
-from pydantic_settings import BaseSettings
+import os
+from pathlib import Path
+from typing import Literal
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    ENV: Literal["development", "production"] = "development"
+
+    PORT: int = 8000
+    SERVER_HOST: str = ""
+    CORS_ORIGIN: str = "*"
+    CORS_ORIGINS: list[str] = [""]
+
     APP_NAME: str = "Ping"
     DATABASE: str = "ping"
 
@@ -10,50 +20,85 @@ class Settings(BaseSettings):
     ADMIN_TYPE: str = "ADMIN"
 
     # Super Admin
-    SUPER_ADMIN_USERNAME: str = "superadmin"
-    SUPER_ADMIN_PASSWORD: str = "Super@123"
+    SUPER_ADMIN_USERNAME: str = ""
+    SUPER_ADMIN_PASSWORD: str = ""
 
     # Neo4j
-    NEO4J_URI: str = "bolt://localhost:7687"
-    NEO4J_USERNAME: str = "neo4j"
-    NEO4J_PASSWORD: str = "ping12345"
+    NEO4J_URI: str = ""
+    NEO4J_USERNAME: str = ""
+    NEO4J_PASSWORD: str = ""
 
-    # NEO4J_URI="neo4j+s://673ff4b8.databases.neo4j.io"
-    # NEO4J_USERNAME="neo4j"
-    # NEO4J_PASSWORD="Govindwork1@"
+    # Email Service
+    SMTP_SERVER: str = ""
+    SMTP_PORT: int = 587
+    FROM_ADDRESS: str = ""
+    EMAIL_PASSWORD: str = ""
+    DEFAULT_EMAIL_FROM: str = ""
 
     # Mongo DB
-    MONGO_URL: str = "localhost"
-    MONGO_PORT: int = 27017
-    USER_IDENTITY: str = "user_identity"
+    MONGO_URI: str = ""
     USERS: str = "users"
     CHATS: str = "chats"
     PINGS: str = "pings"
     POSTS: str = "posts"
-    REACTIONS: str = "reactions"
+    POST_COMMENTS: str = "post_comments"
+    POST_LIKES: str = "post_likes"
     FOLLOWERS: str = "followers"
     FOLLOWING: str = "following"
     REPORTS: str = "reports"
 
+    # Redis
+    REDIS_HOST: str = ""
+    REDIS_PORT: int = 6379
+    REDIS_DB: str = "ping"
+
     # Minio
-    MINIO_URL: str = "localhost:9000"
-    MINIO_ACCESS_KEY: str = "minioadmin"
-    MINIO_SECRET_KEY: str = "minioadmin"
+    MINIO_URL: str = ""
+    MINIO_ACCESS_KEY: str = ""
+    MINIO_SECRET_KEY: str = ""
     MINIO_POST_BUCKET_NAME: str = "pinguserposts"
 
     # Authentication
+    SECRET_KEY: str = ""
+    JWT_PAYLOAD_ENCRY: str = "="
+    JWT_ALGORITHM: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 1  # 60 minutes * 24 hours * 1 = 1 day
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 30  # 30 day
-    SECRET_KEY: SecretStr = "nMBkBb4GY_dSPEmvFaLYM9eWpY-29iyg55EVF3x6wzU="
-    JWT_PAYLOAD_ENCRY: SecretStr = "XnxR9vMkx4LfHCbASeWNX48UsRdY3WNUtIMjmLomCvI="
-    JWT_ALGORITHM: str = "HS256"
-
-    # Email Service
-    SMTP_SERVER: str = "smtp.gmail.com"
-    SMTP_PORT: int = 587
-    FROM_ADDRESS: str = "mail.pingapp@gmail.com"
-    EMAIL_PASSWORD: str = "kgcoxedsjdzryikk"
-    DEFAULT_EMAIL_FROM: str = "noreply@ping.pg"
 
 
-settings = Settings()
+class DevSettings(Settings):
+    """
+    Development configuration settings. Loads from .env file.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).parent.parent.parent / ".env",
+        validate_default=False,
+        env_prefix="",
+        case_sensitive=False,
+        extra="ignore",
+        env_ignore_empty=True,
+    )
+
+
+class ProdSettings(Settings):
+    """
+    Production configuration settings. Loads from OS environment.
+    """
+
+    model_config = SettingsConfigDict(
+        validate_default=False,
+        env_prefix="",
+        case_sensitive=False,
+        extra="ignore",
+        env_ignore_empty=True,
+    )
+
+
+def get_settings(env: Literal["development", "production"]):
+    if env == "development":
+        return DevSettings()
+    return ProdSettings()
+
+
+settings = get_settings(os.getenv("ENV", "development").lower())

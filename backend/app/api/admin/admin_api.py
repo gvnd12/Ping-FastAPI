@@ -36,7 +36,7 @@ async def undelete_user(user_id: str, admin: bool = Depends(get_admin)):
             result = await UserOP().edit_user(
                 filter_params={"_id": user_id}, document={"is_deleted": False}
             )
-            logger.info(f"User deactivated - {user_id}")
+            logger.info(f"User undeleted - {user_id}")
             return BaseResponseModel(message=result.get("message"))
         except Exception as e:
             logger.error(f"Failed to undelete user: {str(e)}")

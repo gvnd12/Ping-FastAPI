@@ -5,13 +5,14 @@ from app.schemas.request_schema import (
     CommentRequestModel,
     CreateAccountRequest,
     LoginRequestModel,
-    PostLikeRequestModel,
     ReportRequestModel,
     UserSearch,
 )
 from app.schemas.response_schema import (
     BaseResponseModel,
+    CommentResponseModel,
     CreateUserResponseModel,
+    LikeResponseModel,
     LoginResponseModel,
     ProfileResponseModel,
     SearchResponseModel,
@@ -31,5 +32,6 @@ __all__ = [
     "CommentRequestModel",
     "ChangePasswordRequest",
     "ReportRequestModel",
-    "PostLikeRequestModel",
+    "CommentResponseModel",
+    "LikeResponseModel",
 ]

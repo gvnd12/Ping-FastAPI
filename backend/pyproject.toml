@@ -12,10 +12,12 @@ dependencies = [
     "minio>=7.2.20",
     "neo4j>=5.28.1",
     "passlib[bcrypt]>=1.7.4",
+    "pillow>=12.3.0",
     "premailer>=3.10.0",
     "pydantic-settings>=2.8.1",
     "pyjwt>=2.10.1",
     "python-jose>=3.4.0",
+    "redis>=8.0.1",
     "ruff>=0.12.0",
 ]
 [tool.ruff]
