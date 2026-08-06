@@ -1,4 +1,4 @@
-# Ping - FastAPI Backend
+# Ping - FastAPI
 
 A production-oriented social media backend built with **FastAPI**, designed around a modular architecture and modern backend practices. The project demonstrates scalable API design, JWT authentication, graph databases, object storage, and asynchronous programming.
 
